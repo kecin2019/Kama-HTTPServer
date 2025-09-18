@@ -10,50 +10,49 @@
 #include"../../../../HttpServer/include/utils/MysqlUtil.h"
 
 
-//Õâ±ß·â×°curlÈ¥·ÃÎÊ¶Ô°¢ÀïµÄÄ£ĞÍ
-
+//è¿™è¾¹å°è£…curlå»è®¿é—®å¯¹é˜¿é‡Œçš„æ¨¡å‹
 class AIHelper {
 public:
-    // ¹¹Ôìº¯Êı£¬³õÊ¼»¯API Key
+    // æ„é€ å‡½æ•°ï¼Œåˆå§‹åŒ–API Key
     AIHelper(const std::string& apiKey);
 
-    // ÉèÖÃÄ¬ÈÏÄ£ĞÍ
+    // è®¾ç½®é»˜è®¤æ¨¡å‹
     void setModel(const std::string& modelName);
 
-    // Ìí¼ÓÒ»ÌõÏûÏ¢
+    // æ·»åŠ ä¸€æ¡æ¶ˆæ¯
     void addMessage(int userId, const std::string& userName, bool is_user, const std::string& userInput);
-    // »Ö¸´Ò»ÌõÏûÏ¢
+    // æ¢å¤ä¸€æ¡æ¶ˆæ¯
     void restoreMessage(const std::string& userInput, long long ms);
 
-    // ·¢ËÍÁÄÌìÏûÏ¢£¬·µ»ØAIµÄÏìÓ¦ÄÚÈİ
+    // å‘é€èŠå¤©æ¶ˆæ¯ï¼Œè¿”å›AIçš„å“åº”å†…å®¹
     // messages: [{"role":"system","content":"..."}, {"role":"user","content":"..."}]
     std::string chat(int userId, std::string userName);
 
-    // ¿ÉÑ¡£º·¢ËÍ×Ô¶¨ÒåÇëÇóÌå
+    // å¯é€‰ï¼šå‘é€è‡ªå®šä¹‰è¯·æ±‚ä½“
     json request(const json& payload);
 
     std::vector<std::pair<std::string, long long>> GetMessages();
 
 private:
-    //¼ÓÈëµ½mysqlµÄ½Ó¿Ú£¨Ìá¹©¼ÓÈëµ½Ïß³Ì³ØµÄ½Ó¿Ú£¬Ïß³Ì³Ø×öÒì²½mysql¸üĞÂ²Ù×÷£©
+    //åŠ å…¥åˆ°mysqlçš„æ¥å£ï¼ˆæä¾›åŠ å…¥åˆ°çº¿ç¨‹æ± çš„æ¥å£ï¼Œçº¿ç¨‹æ± åšå¼‚æ­¥mysqlæ›´æ–°æ“ä½œï¼‰
     //todo: 
     void pushMessageToMysql(int userId, const std::string& userName, bool is_user, const std::string& userInput, long long ms);
 
-    // ÄÚ²¿·½·¨£ºÖ´ĞĞcurlÇëÇó£¬·µ»ØÔ­Ê¼JSON
+    // å†…éƒ¨æ–¹æ³•ï¼šæ‰§è¡Œcurlè¯·æ±‚ï¼Œè¿”å›åŸå§‹JSON
     json executeCurl(const json& payload);
-    // curl »Øµ÷º¯Êı£¬°Ñ·µ»ØµÄÊı¾İĞ´µ½ string buffer
+    // curl å›è°ƒå‡½æ•°ï¼ŒæŠŠè¿”å›çš„æ•°æ®å†™åˆ° string buffer
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 
 private:
     std::string apiKey_;
-    //Ä¬ÈÏÓÃÍ¨ÒåÇ§ÎÊ
+    //é»˜è®¤ç”¨é€šä¹‰åƒé—®
     std::string model_ = "qwen-plus";
-    //¶ÔÓ¦µØÖ·
+    //å¯¹åº”åœ°å€
     std::string apiUrl_ = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
 
-    //Ò»¸öÓÃ»§Õë¶ÔÒ»¸öAIHelper£¬messages´æ·ÅÓÃ»§µÄÀúÊ·¶Ô»°
-    //Å¼ÊıÏÂ±ê´ú±íÓÃ»§µÄĞÅÏ¢£¬ÆæÊıÏÂ±êÊÇai·µ»ØµÄÄÚÈİ
-    //ºóÕß´ú±íÊ±¼ä´Á
+    //ä¸€ä¸ªç”¨æˆ·é’ˆå¯¹ä¸€ä¸ªAIHelperï¼Œmessageså­˜æ”¾ç”¨æˆ·çš„å†å²å¯¹è¯
+    //å¶æ•°ä¸‹æ ‡ä»£è¡¨ç”¨æˆ·çš„ä¿¡æ¯ï¼Œå¥‡æ•°ä¸‹æ ‡æ˜¯aiè¿”å›çš„å†…å®¹
+    //åè€…ä»£è¡¨æ—¶é—´æˆ³
     std::vector<std::pair<std::string, long long>> messages;
 
     //http::MysqlUtil mysqlUtil_;
