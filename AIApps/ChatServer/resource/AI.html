@@ -14,7 +14,6 @@
             height: 100vh;
         }
 
-        /* 顶部导航栏 */
         .top-bar {
             padding: 10px;
             background: #fff;
@@ -32,10 +31,9 @@
             cursor: pointer;
             font-size: 14px;
         }
-
-            .back-btn:hover, .sync-btn:hover {
-                background: #0056b3;
-            }
+        .back-btn:hover, .sync-btn:hover {
+            background: #0056b3;
+        }
 
         .chat-container {
             flex: 1;
@@ -95,11 +93,14 @@
             font-size: 14px;
             cursor: pointer;
         }
-
-            button:hover {
-                background: #0056b3;
-            }
+        button:hover {
+            background: #0056b3;
+        }
     </style>
+
+    <!-- 引入 marked 和 DOMPurify -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.0/dist/purify.min.js"></script>
 </head>
 <body>
     <!-- 顶部按钮 -->
@@ -124,11 +125,15 @@
         const questionInput = document.getElementById('question');
         const syncBtn = document.getElementById('sync-history-btn');
 
-        // 渲染消息到页面
+        // 渲染消息到页面（支持 Markdown）
         function appendMessage(role, content) {
             const msgDiv = document.createElement('div');
             msgDiv.classList.add('message', role);
-            msgDiv.innerHTML = `<b>${role === 'user' ? '你' : 'AI'}:</b> ${content}`;
+
+            // Markdown 转 HTML，并清理不安全标签
+            const safeHtml = DOMPurify.sanitize(marked.parse(content));
+
+            msgDiv.innerHTML = `<b>${role === 'user' ? '你' : 'AI'}:</b><br>${safeHtml}`;
             chatContainer.appendChild(msgDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight; // 自动滚动到底部
         }
@@ -169,9 +174,9 @@
         syncBtn.addEventListener('click', async () => {
             try {
                 const response = await fetch('/chat/history', {
-                    method: 'POST', // 使用 POST 请求
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}) // 可以传空对象
+                    body: JSON.stringify({})
                 });
                 const data = await response.json();
 
