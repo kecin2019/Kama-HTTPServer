@@ -3,23 +3,23 @@
 #include <stdexcept>
 #include<chrono>
 
-// ¹¹Ôìº¯Êı
+// æ„é€ å‡½æ•°
 AIHelper::AIHelper(const std::string& apiKey)
     : apiKey_(apiKey) {
 }
 
-// ÉèÖÃÄ¬ÈÏÄ£ĞÍ
+// è®¾ç½®é»˜è®¤æ¨¡å‹
 void AIHelper::setModel(const std::string& modelName) {
     model_ = modelName;
 }
 
-// Ìí¼ÓÒ»ÌõÓÃ»§ÏûÏ¢
+// æ·»åŠ ä¸€æ¡ç”¨æˆ·æ¶ˆæ¯
 void AIHelper::addMessage(int userId,const std::string& userName, bool is_user,const std::string& userInput ) {
     auto now = std::chrono::system_clock::now();
     auto duration = now.time_since_epoch();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
     messages.push_back({ userInput,ms });
-    //ÏûÏ¢¶ÓÁĞÒì²½Èë¿â
+    //æ¶ˆæ¯é˜Ÿåˆ—å¼‚æ­¥å…¥åº“
     pushMessageToMysql(userId, userName, is_user, userInput,ms);
 }
 
@@ -28,20 +28,20 @@ void AIHelper::restoreMessage(const std::string& userInput,long long ms) {
 }
 
 
-// ·¢ËÍÁÄÌìÏûÏ¢
+// å‘é€èŠå¤©æ¶ˆæ¯
 std::string AIHelper::chat(int userId,std::string userName) {
-    // ¹¹Ôì payload
+    // æ„é€  payload
     json payload;
     payload["model"] = model_;
     json msgArray = json::array();
 
     for (size_t i = 0; i < messages.size(); ++i) {
         json msg;
-        if (i % 2 == 0) { // Å¼ÊıÏÂ±ê£ºÓÃ»§
+        if (i % 2 == 0) { // å¶æ•°ä¸‹æ ‡ï¼šç”¨æˆ·
             msg["role"] = "user";
             msg["content"] = messages[i].first;
         }
-        else { // ÆæÊıÏÂ±ê£ºAI
+        else { // å¥‡æ•°ä¸‹æ ‡ï¼šAI
             msg["role"] = "assistant";
             msg["content"] = messages[i].first;
         }
@@ -50,23 +50,23 @@ std::string AIHelper::chat(int userId,std::string userName) {
 
     payload["messages"] = msgArray;
 
-    // ´òÓ¡ payload£¨Ëõ½ø 4 ¸ö¿Õ¸ñ£©
+    // æ‰“å° payloadï¼ˆç¼©è¿› 4 ä¸ªç©ºæ ¼ï¼‰
     std::cout << "[DEBUG] payload = " << payload.dump(4) << std::endl;
 
-    // Ö´ĞĞÇëÇó
+    // æ‰§è¡Œè¯·æ±‚
     json response = executeCurl(payload);
 
     if (response.contains("choices") && !response["choices"].empty()) {
         std::string answer = response["choices"][0]["message"]["content"];
-        // ±£´æ AI »Ø¸´
+        // ä¿å­˜ AI å›å¤
         addMessage(userId,userName, false,answer);
         return answer;
     }
 
-    return "[Error] ÎŞ·¨½âÎöÏìÓ¦";
+    return "[Error] æ— æ³•è§£æå“åº”";
 }
 
-// ·¢ËÍ×Ô¶¨ÒåÇëÇóÌå
+// å‘é€è‡ªå®šä¹‰è¯·æ±‚ä½“
 json AIHelper::request(const json& payload) {
     return executeCurl(payload);
 }
@@ -76,7 +76,7 @@ std::vector<std::pair<std::string, long long>> AIHelper::GetMessages() {
 }
 
 
-// ÄÚ²¿·½·¨£ºÖ´ĞĞ curl ÇëÇó
+// å†…éƒ¨æ–¹æ³•ï¼šæ‰§è¡Œ curl è¯·æ±‚
 json AIHelper::executeCurl(const json& payload) {
     CURL* curl = curl_easy_init();
     if (!curl) {
@@ -114,7 +114,7 @@ json AIHelper::executeCurl(const json& payload) {
     }
 }
 
-// curl »Øµ÷º¯Êı£¬°Ñ·µ»ØµÄÊı¾İĞ´µ½ string buffer
+// curl å›è°ƒå‡½æ•°ï¼ŒæŠŠè¿”å›çš„æ•°æ®å†™åˆ° string buffer
 size_t AIHelper::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     size_t totalSize = size * nmemb;
     std::string* buffer = static_cast<std::string*>(userp);
@@ -122,14 +122,41 @@ size_t AIHelper::WriteCallback(void* contents, size_t size, size_t nmemb, void* 
     return totalSize;
 }
 
+std::string AIHelper::escapeString(const std::string& input) {
+    std::string output;
+    output.reserve(input.size() * 2);
+    for (char c : input) {
+        switch (c) {
+            case '\\': output += "\\\\"; break;
+            case '\'': output += "\\\'"; break;
+            case '\"': output += "\\\""; break;
+            case '\n': output += "\\n"; break;
+            case '\r': output += "\\r"; break;
+            case '\t': output += "\\t"; break;
+            default:   output += c; break;
+        }
+    }
+    return output;
+}
+
+
 void AIHelper::pushMessageToMysql(int userId, const std::string& userName, bool is_user, const std::string& userInput,long long ms) {
+    // std::string sql = "INSERT INTO chat_message (id, username, is_user, content, ts) VALUES ("
+    //     + std::to_string(userId) + ", "  // è¿™é‡Œç”¨ userId ä½œä¸º idï¼Œæˆ–è€…ä½ è‡ªå·±ç”Ÿæˆ
+    //     + "'" + userName + "', "
+    //     + std::to_string(is_user ? 1 : 0) + ", "
+    //     + "'" + userInput + "', "
+    //     + std::to_string(ms) + ")";
+    std::string safeUserName = escapeString(userName);
+    std::string safeUserInput = escapeString(userInput);
+
     std::string sql = "INSERT INTO chat_message (id, username, is_user, content, ts) VALUES ("
-        + std::to_string(userId) + ", "  // ÕâÀïÓÃ userId ×÷Îª id£¬»òÕßÄã×Ô¼ºÉú³É
-        + "'" + userName + "', "
+        + std::to_string(userId) + ", "
+        + "'" + safeUserName + "', "
         + std::to_string(is_user ? 1 : 0) + ", "
-        + "'" + userInput + "', "
+        + "'" + safeUserInput + "', "
         + std::to_string(ms) + ")";
-    //¸Ä³ÉÏûÏ¢¶ÓÁĞÒì²½Ö´ĞĞmysql²Ù×÷£¬ÓÃÓÚÁ÷Á¿Ï÷·åÓë½âñîÂß¼­
+    //æ”¹æˆæ¶ˆæ¯é˜Ÿåˆ—å¼‚æ­¥æ‰§è¡Œmysqlæ“ä½œï¼Œç”¨äºæµé‡å‰Šå³°ä¸è§£è€¦é€»è¾‘
     //mysqlUtil_.executeUpdate(sql);
 
     MQManager::instance().publish("sql_queue", sql);
