@@ -1,20 +1,23 @@
-#include"../include/AIUtil/MQManager.h"
+#include "../include/AIUtil/MQManager.h"
 
 // ------------------- MQManager -------------------
 MQManager::MQManager(size_t poolSize)
-    : poolSize_(poolSize), counter_(0) {
-    for (size_t i = 0; i < poolSize_; ++i) {
+    : poolSize_(poolSize), counter_(0)
+{
+    for (size_t i = 0; i < poolSize_; ++i)
+    {
         auto conn = std::make_shared<MQConn>();
-        // ±£Áô Create
+        // åˆå§‹åŒ– Create
         conn->channel = AmqpClient::Channel::Create("localhost", 5672, "guest", "guest", "/");
-        // ÕâÀï²»ÖØ¸´ÉùÃ÷¶ÓÁÐ£¬±ÜÃâ exclusive use
+        // ï¿½ï¿½ï¿½ï²»ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ exclusive use
         pool_.push_back(conn);
     }
 }
 
-void MQManager::publish(const std::string& queue, const std::string& msg) {
+void MQManager::publish(const std::string &queue, const std::string &msg)
+{
     size_t index = counter_.fetch_add(1) % poolSize_;
-    auto& conn = pool_[index];
+    auto &conn = pool_[index];
 
     std::lock_guard<std::mutex> lock(conn->mtx);
     auto message = AmqpClient::BasicMessage::Create(msg);
@@ -23,45 +26,55 @@ void MQManager::publish(const std::string& queue, const std::string& msg) {
 
 // ------------------- RabbitMQThreadPool -------------------
 
-void RabbitMQThreadPool::start() {
-    for (int i = 0; i < thread_num_; ++i) {
+void RabbitMQThreadPool::start()
+{
+    for (int i = 0; i < thread_num_; ++i)
+    {
         workers_.emplace_back(&RabbitMQThreadPool::worker, this, i);
     }
 }
 
-void RabbitMQThreadPool::shutdown() {
+void RabbitMQThreadPool::shutdown()
+{
     stop_ = true;
-    for (auto& t : workers_) {
-        if (t.joinable()) t.join();
+    for (auto &t : workers_)
+    {
+        if (t.joinable())
+            t.join();
     }
 }
 
-void RabbitMQThreadPool::worker(int id) {
-    try {
-        // Ã¿¸öÏß³Ì¶ÀÁ¢ channel
+void RabbitMQThreadPool::worker(int id)
+{
+    try
+    {
+        // æ¯ä¸ªçº¿ç¨‹åˆ›å»ºä¸€ä¸ª channel
         auto channel = AmqpClient::Channel::Create(rabbitmq_host_, 5672, "guest", "guest", "/");
-        // ÉùÃ÷¶ÓÁÐ£¨·Ç exclusive£©
+        // å£°æ˜Žé˜Ÿåˆ—ï¼Œè®¾ç½®ä¸ºç‹¬å æ¨¡å¼ï¼Œé˜²æ­¢å…¶ä»–çº¿ç¨‹æ¶ˆè´¹
         channel->DeclareQueue(queue_name_, false, true, false, false);
-        //·ÀÖ¹³öÏÖ£ºchannel error: 403: AMQP_BASIC_CONSUME_METHOD caused: ACCESS_REFUSED - queue 
-        // 'sql_queue' in vhost '/' in exclusive use
-        //std::string consumer_tag = channel->BasicConsume(queue_name_, "");
+        // channel error: 403: AMQP_BASIC_CONSUME_METHOD caused: ACCESS_REFUSED - queue
+        //  'sql_queue' in vhost '/' in exclusive use
+        // std::string consumer_tag = channel->BasicConsume(queue_name_, "");
         std::string consumer_tag = channel->BasicConsume(queue_name_, "", true, false, false);
 
-        channel->BasicQos(consumer_tag, 1); // Ã¿¸öÏß³ÌÒ»´ÎÖ»´¦ÀíÒ»ÌõÏûÏ¢
+        channel->BasicQos(consumer_tag, 1); // æ¯ä¸ªçº¿ç¨‹è®¾ç½®QoSä¸º1ï¼Œç¡®ä¿æ¯ä¸ªæ¶ˆæ¯åªè¢«ä¸€ä¸ªçº¿ç¨‹å¤„ç†
 
-        while (!stop_) {
+        while (!stop_)
+        {
             AmqpClient::Envelope::ptr_t env;
-            bool ok = channel->BasicConsumeMessage(consumer_tag, env, 500); // 500ms ³¬Ê±
-            if (ok && env) {
+            bool ok = channel->BasicConsumeMessage(consumer_tag, env, 500); // 500ms è¶…æ—¶
+            if (ok && env)
+            {
                 std::string msg = env->Message()->Body();
-                handler_(msg);          // ÓÃ»§´¦ÀíÏûÏ¢
-                channel->BasicAck(env); // È·ÈÏÏûÏ¢
+                handler_(msg);          // ç”¨æˆ·è‡ªå®šä¹‰å¤„ç†æ¶ˆæ¯çš„å‡½æ•°
+                channel->BasicAck(env); // ç¡®è®¤æ¶ˆæ¯å·²å¤„ç†
             }
         }
 
         channel->BasicCancel(consumer_tag);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception &e)
+    {
         std::cerr << "Thread " << id << " exception: " << e.what() << std::endl;
     }
 }

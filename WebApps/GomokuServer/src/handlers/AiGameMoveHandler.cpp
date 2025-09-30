@@ -163,7 +163,7 @@ void AiGameMoveHandler::handle(const http::HttpRequest &req, http::HttpResponse 
         resp->setBody(responseBody);
     }
     catch (const std::exception &e)
-    { 
+    {
         json response = {
             {"status", "error"},
             {"message", e.what()}};

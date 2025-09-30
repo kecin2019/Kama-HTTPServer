@@ -5,15 +5,14 @@
 class ChatEntryHandler : public http::router::RouterHandler
 {
 public:
-    explicit ChatEntryHandler(ChatServer* server) : server_(server) {}
+    explicit ChatEntryHandler(ChatServer *server) : server_(server) {}
 
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
 
 private:
-    ChatServer* server_;
+    ChatServer *server_;
     /*
         http::MysqlUtil mysqlUtil_;
         bool init=false;
     */
-
 };

@@ -31,7 +31,7 @@ void LoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp
             // 会话都不是同一个会话，因为会话判断是不是同一个会话是通过请求报文中的cookie来判断的
             // 所以不同页面的访问是不可能是相同的会话的，只有该页面前面访问过服务端，才会有会话记录
             // 那么判断用户是否在其他地方登录中不能通过会话来判断
-            
+
             // 在会话中存储用户信息
             session->setValue("userId", std::to_string(userId));
             session->setValue("username", username);
@@ -42,7 +42,7 @@ void LoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp
                     std::lock_guard<std::mutex> lock(server_->mutexForOnlineUsers_);
                     server_->onlineUsers_[userId] = true;
                 }
-                
+
                 // 更新历史最高在线人数
                 server_->updateMaxOnline(server_->onlineUsers_.size());
                 // 用户存在登录成功
@@ -115,7 +115,7 @@ int LoginHandler::queryUserId(const std::string &username, const std::string &pa
     // 使用预处理语句, 防止sql注入
     std::string sql = "SELECT id FROM users WHERE username = ? AND password = ?";
     // std::vector<std::string> params = {username, password};
-    sql::ResultSet* res = mysqlUtil_.executeQuery(sql, username, password);
+    sql::ResultSet *res = mysqlUtil_.executeQuery(sql, username, password);
     if (res->next())
     {
         int id = res->getInt("id");
@@ -124,4 +124,3 @@ int LoginHandler::queryUserId(const std::string &username, const std::string &pa
     // 如果查询结果为空，则返回-1
     return -1;
 }
-

@@ -1,14 +1,15 @@
 #include "../include/handlers/ChatEntryHandler.h"
 
-
-
-void ChatEntryHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatEntryHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
-    // ÒòÎªÊÇgetÇëÇó£¬ÇëÇóµÄurlÒ²ÄÃµ½ÁË£¬ÎÒÃÇ¾Í¿ÉÒÔÖ±½Ó·µ»ØÏìÓ¦ÁË
+    // å¤„ç† GET è¯·æ±‚ï¼Œè¿”å› entry.html æ–‡ä»¶å†…å®¹
+    // 1. æ„å»ºæ–‡ä»¶è·¯å¾„
+    // 2. æ£€æŸ¥æ–‡ä»¶æ˜¯å¦å­˜åœ¨
+    // 3. è¯»å–æ–‡ä»¶å†…å®¹
+    // 4. è®¾ç½®å“åº”çŠ¶æ€è¡Œã€å…³é—­è¿æ¥ã€å†…å®¹ç±»å‹ã€å†…å®¹é•¿åº¦ã€å“åº”ä½“
+    // 5. è¿”å›å“åº”
+    // 6. å¼‚å¸¸å¤„ç†
 
-    //ÕâÀïÏÈÊÇÍ¨¹ı×Ö·û´®´«ÈëÒ»¸öÂ·¾¶
-    //È»ºó½«¶ÔÓ¦µÄÂ·¾¶ÏÂµÄÎÄ¼şÍ¨¹ıFileUtil½øĞĞ´ò¿ª£¬
-    //×îºó½«Õâ²¿·ÖÊı¾İ¸³Öµ¸øÕâ¸östring buffer£¬²¢½øĞĞ·µ»ØÏìÓ¦
     std::string reqFile;
     reqFile.append("../AIApps/ChatServer/resource/entry.html");
     FileUtil fileOperater(reqFile);
@@ -19,7 +20,7 @@ void ChatEntryHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
     }
 
     std::vector<char> buffer(fileOperater.size());
-    fileOperater.readFile(buffer); // ¶Á³öÎÄ¼şÊı¾İ
+    fileOperater.readFile(buffer); // è¯»å–æ–‡ä»¶å†…å®¹åˆ° buffer
     std::string bufStr = std::string(buffer.data(), buffer.size());
 
     resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");

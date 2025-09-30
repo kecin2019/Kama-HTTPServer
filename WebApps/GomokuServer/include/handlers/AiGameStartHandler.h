@@ -5,10 +5,10 @@
 class AiGameStartHandler : public http::router::RouterHandler
 {
 public:
-    explicit AiGameStartHandler(GomokuServer* server) : server_(server) {}
+    explicit AiGameStartHandler(GomokuServer *server) : server_(server) {}
 
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
 
 private:
-    GomokuServer* server_;
+    GomokuServer *server_;
 };

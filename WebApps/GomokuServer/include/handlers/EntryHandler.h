@@ -2,13 +2,13 @@
 #include "../../../../HttpServer/include/router/RouterHandler.h"
 #include "../GomokuServer.h"
 
-class EntryHandler : public http::router::RouterHandler 
+class EntryHandler : public http::router::RouterHandler
 {
 public:
-    explicit EntryHandler(GomokuServer* server) : server_(server) {}
+    explicit EntryHandler(GomokuServer *server) : server_(server) {}
 
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
 
 private:
-    GomokuServer* server_;
+    GomokuServer *server_;
 };

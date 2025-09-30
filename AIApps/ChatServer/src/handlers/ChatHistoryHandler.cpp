@@ -1,55 +1,57 @@
 #include "../include/handlers/ChatHistoryHandler.h"
 
-void ChatHistoryHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
     try
     {
-        // ¼ì²éÓÃ»§ÊÇ·ñÒÑµÇÂ¼
+        // æ£€æŸ¥ç”¨æˆ·æ˜¯å¦å·²ç™»å½•
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // ÓÃ»§Î´µÇÂ¼£¬·µ»ØÎ´ÊÚÈ¨´íÎó
+            // ç”¨æˆ·æœªç™»å½•ï¼Œè¿”å› 401 æœªæˆæƒé”™è¯¯
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                "Unauthorized", true, "application/json", errorBody.size(),
-                errorBody, resp);
+                                 "Unauthorized", true, "application/json", errorBody.size(),
+                                 errorBody, resp);
             return;
         }
 
-        // »ñÈ¡ÓÃ»§ĞÅÏ¢ÒÔ¼°»ñÈ¡ÓÃ»§¶ÔÓ¦µÄ±íÊı¾İ
+        // ä»ä¼šè¯ä¸­è·å–ç”¨æˆ·IDå’Œç”¨æˆ·å
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
         std::vector<std::pair<std::string, long long>> messages;
         {
             std::shared_ptr<AIHelper> AIHelperPtr;
             std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
-            if (server_->chatInformation.find(userId) == server_->chatInformation.end()) {
-                //´Ólinux»·¾³±äÁ¿ÖĞÄÃÈ¡¶ÔÓ¦µÄapi-key²¢³õÊ¼»¯Ò»¸öAIHelper
-                const char* apiKey = std::getenv("DASHSCOPE_API_KEY");
-                if (!apiKey) {
+            if (server_->chatInformation.find(userId) == server_->chatInformation.end())
+            {
+                // ç”¨æˆ·æœªåˆå§‹åŒ– AIHelperï¼Œä»ç¯å¢ƒå˜é‡è·å– API Key å¹¶åˆå§‹åŒ–
+                const char *apiKey = std::getenv("DASHSCOPE_API_KEY");
+                if (!apiKey)
+                {
                     std::cerr << "Error: DASHSCOPE_API_KEY not found in environment!" << std::endl;
                     return;
                 }
-                // ²åÈëÒ»¸öĞÂµÄ AIHelper
+                // åˆ›å»ºæ–°çš„ AIHelper å®ä¾‹å¹¶å­˜å‚¨åˆ° chatInformation ä¸­
                 server_->chatInformation.emplace(
                     userId,
-                    std::make_shared<AIHelper>(apiKey)
-                );
+                    std::make_shared<AIHelper>(apiKey));
             }
             AIHelperPtr = server_->chatInformation[userId];
-            messages= AIHelperPtr->GetMessages();
+            messages = AIHelperPtr->GetMessages();
         }
-        //start
+        // start
         json successResp;
         successResp["success"] = true;
         successResp["history"] = json::array();
 
-        for (size_t i = 0; i < messages.size(); ++i) {
+        for (size_t i = 0; i < messages.size(); ++i)
+        {
             json msgJson;
             msgJson["is_user"] = (i % 2 == 0);
             msgJson["content"] = messages[i].first;
@@ -65,9 +67,9 @@ void ChatHistoryHandler::handle(const http::HttpRequest& req, http::HttpResponse
         resp->setBody(successBody);
         return;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        // ²¶»ñÒì³££¬·µ»Ø´íÎóĞÅÏ¢
+        // å¤„ç† JSON è§£æå¼‚å¸¸ï¼Œè¿”å› 400 é”™è¯¯
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();
@@ -79,12 +81,3 @@ void ChatHistoryHandler::handle(const http::HttpRequest& req, http::HttpResponse
         resp->setBody(failureBody);
     }
 }
-
-
-
-
-
-
-
-
-

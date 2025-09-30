@@ -5,10 +5,10 @@
 class AIUploadSendHandler : public http::router::RouterHandler
 {
 public:
-    explicit AIUploadSendHandler(ChatServer* server) : server_(server) {}
+    explicit AIUploadSendHandler(ChatServer *server) : server_(server) {}
 
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
 
 private:
-    ChatServer* server_;
+    ChatServer *server_;
 };

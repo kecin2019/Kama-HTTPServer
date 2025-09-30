@@ -1,6 +1,6 @@
 #include "../include/handlers/ChatLogoutHandler.h"
 
-void ChatLogoutHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatLogoutHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
     auto contentType = req.getHeader("Content-Type");
     if (contentType.empty() || contentType != "application/json" || req.getBody().empty())
@@ -13,26 +13,26 @@ void ChatLogoutHandler::handle(const http::HttpRequest& req, http::HttpResponse*
         return;
     }
 
-    // JSON ½âÎöÊ¹ÓÃ try catch ²¶»ñÒì³£
+    // JSON è§£æè¯·æ±‚ä½“ Try-Catch å¼‚å¸¸å¤„ç†
     try
     {
-        // »ñÈ¡»á»°
+        // è·å–ä¼šè¯å¯¹è±¡
         auto session = server_->getSessionManager()->getSession(req, resp);
-        // »ñÈ¡ÓÃ»§id
+        // ä»ä¼šè¯ä¸­è·å–ç”¨æˆ·ID
         int userId = std::stoi(session->getValue("userId"));
-        // Çå³ı»á»°Êı¾İ
+        // æ¸…é™¤ä¼šè¯ä¸­çš„æ‰€æœ‰å€¼
         session->clear();
-        // Ïú»Ù»á»°
+        // é”€æ¯ä¼šè¯
         server_->getSessionManager()->destroySession(session->getId());
 
         json parsed = json::parse(req.getBody());
 
-        {   // ÊÍ·Å×ÊÔ´
+        { // ä»åœ¨çº¿ç”¨æˆ·åˆ—è¡¨ä¸­ç§»é™¤ç”¨æˆ·
             std::lock_guard<std::mutex> lock(server_->mutexForOnlineUsers_);
             server_->onlineUsers_.erase(userId);
         }
 
-        // ·µ»ØÏìÓ¦±¨ÎÄ
+        // æ„å»ºæˆåŠŸå“åº”ä½“
         json response;
         response["message"] = "logout successful";
         std::string responseBody = response.dump(4);
@@ -42,9 +42,9 @@ void ChatLogoutHandler::handle(const http::HttpRequest& req, http::HttpResponse*
         resp->setContentLength(responseBody.size());
         resp->setBody(responseBody);
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        // ²¶»ñÒì³££¬·µ»Ø´íÎóĞÅÏ¢
+        // å¤„ç† JSON è§£æå¼‚å¸¸ï¼Œè¿”å›é”™è¯¯å“åº”
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();

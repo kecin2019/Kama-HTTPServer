@@ -1,9 +1,9 @@
 #include "../include/handlers/ChatLoginHandler.h"
 
-void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatLoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
-    // ´¦ÀíµÇÂ¼Âß¼­
-    // ÑéÖ¤ contentType
+    // å¤„ç†ç™»å½•è¯·æ±‚
+    // éªŒè¯ contentType
     auto contentType = req.getHeader("Content-Type");
     if (contentType.empty() || contentType != "application/json" || req.getBody().empty())
     {
@@ -16,23 +16,21 @@ void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
         return;
     }
 
-    // JSON ½âÎöÊ¹ÓÃ try catch ²¶»ñÒì³£
+    // è§£æ JSON è¯·æ±‚ä½“
     try
     {
         json parsed = json::parse(req.getBody());
         std::string username = parsed["username"];
         std::string password = parsed["password"];
-        // ÑéÖ¤ÓÃ»§ÊÇ·ñ´æÔÚ
+        // éªŒè¯ç”¨æˆ·åå’Œå¯†ç æ˜¯å¦æ­£ç¡®
         int userId = queryUserId(username, password);
         if (userId != -1)
         {
-            // »ñÈ¡»á»°
+            // è·å–ä¼šè¯å¯¹è±¡
             auto session = server_->getSessionManager()->getSession(req, resp);
-            // »á»°¶¼²»ÊÇÍ¬Ò»¸ö»á»°£¬ÒòÎª»á»°ÅĞ¶ÏÊÇ²»ÊÇÍ¬Ò»¸ö»á»°ÊÇÍ¨¹ıÇëÇó±¨ÎÄÖĞµÄcookieÀ´ÅĞ¶ÏµÄ
-            // ËùÒÔ²»Í¬Ò³ÃæµÄ·ÃÎÊÊÇ²»¿ÉÄÜÊÇÏàÍ¬µÄ»á»°µÄ£¬Ö»ÓĞ¸ÃÒ³ÃæÇ°Ãæ·ÃÎÊ¹ı·şÎñ¶Ë£¬²Å»áÓĞ»á»°¼ÇÂ¼
-            // ÄÇÃ´ÅĞ¶ÏÓÃ»§ÊÇ·ñÔÚÆäËûµØ·½µÇÂ¼ÖĞ²»ÄÜÍ¨¹ı»á»°À´ÅĞ¶Ï
 
-            // ÔÚ»á»°ÖĞ´æ´¢ÓÃ»§ĞÅÏ¢
+            // å­˜å‚¨ç”¨æˆ·IDã€ç”¨æˆ·åå’Œç™»å½•çŠ¶æ€åˆ°ä¼šè¯ä¸­
+            // ä¼šè¯ID ä½œä¸ºé”®ï¼Œç”¨æˆ·IDã€ç”¨æˆ·åå’Œç™»å½•çŠ¶æ€ä½œä¸ºå€¼
             session->setValue("userId", std::to_string(userId));
             session->setValue("username", username);
             session->setValue("isLoggedIn", "true");
@@ -43,8 +41,8 @@ void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
                     server_->onlineUsers_[userId] = true;
                 }
 
-                // ÓÃ»§´æÔÚµÇÂ¼³É¹¦
-                // ·â×°json Êı¾İ¡£
+                // ç”¨æˆ·ç™»å½•æˆåŠŸï¼Œè¿”å› 200 æˆåŠŸå“åº”
+                // æ„å»ºæˆåŠŸå“åº” JSON æ•°æ®
                 json successResp;
                 successResp["success"] = true;
                 successResp["userId"] = userId;
@@ -59,11 +57,11 @@ void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
             }
             else
             {
-                // FIXME: µ±Ç°¸ÃÓÃ»§ÕıÔÚÆäËûµØ·½µÇÂ¼ÖĞ£¬½«Ô­ÓĞµÇÂ¼ÓÃ»§Ç¿ÖÆÏÂÏß¸üºÃ
-                // ²»ÔÊĞíÖØ¸´µÇÂ¼£¬
+                // ç”¨æˆ·å·²ç™»å½•ï¼Œè¿”å› 403 ç¦æ­¢è®¿é—®é”™è¯¯
+                // æ„å»ºç¦æ­¢å“åº” JSON æ•°æ®
                 json failureResp;
                 failureResp["success"] = false;
-                failureResp["error"] = "ÕËºÅÒÑÔÚÆäËûµØ·½µÇÂ¼";
+                failureResp["error"] = "User already logged in";
                 std::string failureBody = failureResp.dump(4);
 
                 resp->setStatusLine(req.getVersion(), http::HttpResponse::k403Forbidden, "Forbidden");
@@ -74,9 +72,9 @@ void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
                 return;
             }
         }
-        else // ÕËºÅÃÜÂë´íÎó£¬ÇëÖØĞÂµÇÂ¼
+        else // ç”¨æˆ·åæˆ–å¯†ç é”™è¯¯
         {
-            // ·â×°jsonÊı¾İ
+            // æ„å»ºé”™è¯¯å“åº” JSON æ•°æ®
             json failureResp;
             failureResp["status"] = "error";
             failureResp["message"] = "Invalid username or password";
@@ -90,9 +88,9 @@ void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
             return;
         }
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        // ²¶»ñÒì³££¬·µ»Ø´íÎóĞÅÏ¢
+        // å¤„ç† JSON è§£æå¼‚å¸¸ï¼Œè¿”å› 400 é”™è¯¯
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();
@@ -105,13 +103,12 @@ void ChatLoginHandler::handle(const http::HttpRequest& req, http::HttpResponse* 
         resp->setBody(failureBody);
         return;
     }
-
 }
 
-int ChatLoginHandler::queryUserId(const std::string& username, const std::string& password)
+int ChatLoginHandler::queryUserId(const std::string &username, const std::string &password)
 {
-    // Ç°¶ËÓÃ»§´«À´ÕËºÅÃÜÂë£¬²éÕÒÊı¾İ¿âÊÇ·ñÓĞ¸ÃÕËºÅÃÜÂë
-    // Ê¹ÓÃÔ¤´¦ÀíÓï¾ä, ·ÀÖ¹sql×¢Èë
+    // æ£€æŸ¥ç”¨æˆ·åå’Œå¯†ç æ˜¯å¦æ­£ç¡®
+    // æ‰§è¡ŒæŸ¥è¯¢è¯­å¥
     std::string sql = "SELECT id FROM users WHERE username = ? AND password = ?";
     // std::vector<std::string> params = {username, password};
     auto res = mysqlUtil_.executeQuery(sql, username, password);
@@ -120,7 +117,6 @@ int ChatLoginHandler::queryUserId(const std::string& username, const std::string
         int id = res->getInt("id");
         return id;
     }
-    // Èç¹û²éÑ¯½á¹ûÎª¿Õ£¬Ôò·µ»Ø-1
+    // æŸ¥è¯¢ç»“æœä¸ºç©ºï¼Œè¿”å› -1 è¡¨ç¤ºç™»å½•å¤±è´¥
     return -1;
 }
-

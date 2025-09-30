@@ -1,7 +1,7 @@
 #include "../include/AIUtil/ImageRecognizer.h"
 
-ImageRecognizer::ImageRecognizer(const std::string& model_path,
-    const std::string& label_path)
+ImageRecognizer::ImageRecognizer(const std::string &model_path,
+                                 const std::string &label_path)
     : env(ORT_LOGGING_LEVEL_WARNING, "ImageRecognizer")
 {
     Ort::SessionOptions session_options;
@@ -11,56 +11,67 @@ ImageRecognizer::ImageRecognizer(const std::string& model_path,
     session = std::make_unique<Ort::Session>(env, model_path.c_str(), session_options);
     allocator = std::make_unique<Ort::AllocatorWithDefaultOptions>();
 
-    // »ñÈ¡ÊäÈëÊä³öÃû×Ö
+    // èŽ·å–è¾“å…¥å’Œè¾“å‡ºèŠ‚ç‚¹çš„åç§°
     input_name = session->GetInputNameAllocated(0, *allocator).get();
     output_name = session->GetOutputNameAllocated(0, *allocator).get();
 
-    // ¼ÙÉèÊäÈëÊÇ [1,3,H,W]
+    // èŽ·å–è¾“å…¥èŠ‚ç‚¹çš„å½¢çŠ¶ [1,3,H,W]
     input_shape = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     input_height = static_cast<int>(input_shape[2]);
     input_width = static_cast<int>(input_shape[3]);
 
-    // ¼ÓÔØ±êÇ©ÎÄ¼þ
+    // åŠ è½½æ ‡ç­¾æ–‡ä»¶
     LoadLabels(label_path);
 }
 
-void ImageRecognizer::LoadLabels(const std::string& label_path) {
+void ImageRecognizer::LoadLabels(const std::string &label_path)
+{
     std::ifstream infile(label_path);
-    if (!infile.is_open()) {
+    if (!infile.is_open())
+    {
         throw std::runtime_error("Failed to open label file: " + label_path);
     }
 
     std::string line;
-    while (std::getline(infile, line)) {
-        if (!line.empty()) {
+    while (std::getline(infile, line))
+    {
+        if (!line.empty())
+        {
             labels.push_back(line);
         }
     }
     infile.close();
 
-    if (labels.empty()) {
+    if (labels.empty())
+    {
         throw std::runtime_error("No labels loaded from file: " + label_path);
     }
 }
 
-std::string ImageRecognizer::PredictFromFile(const std::string& image_path) {
+std::string ImageRecognizer::PredictFromFile(const std::string &image_path)
+{
     cv::Mat img = cv::imread(image_path);
-    if (img.empty()) {
+    if (img.empty())
+    {
         throw std::runtime_error("Failed to load image: " + image_path);
     }
     return PredictFromMat(img);
 }
 
-std::string ImageRecognizer::PredictFromBuffer(const std::vector<unsigned char>& image_data) {
+std::string ImageRecognizer::PredictFromBuffer(const std::vector<unsigned char> &image_data)
+{
     cv::Mat img = cv::imdecode(image_data, cv::IMREAD_COLOR);
-    if (img.empty()) {
+    if (img.empty())
+    {
         throw std::runtime_error("Failed to decode image from buffer");
     }
     return PredictFromMat(img);
 }
 
-std::string ImageRecognizer::PredictFromMat(const cv::Mat& img_raw) {
-    if (img_raw.empty()) {
+std::string ImageRecognizer::PredictFromMat(const cv::Mat &img_raw)
+{
+    if (img_raw.empty())
+    {
         throw std::runtime_error("Input image is empty");
     }
 
@@ -71,7 +82,7 @@ std::string ImageRecognizer::PredictFromMat(const cv::Mat& img_raw) {
     // NHWC -> NCHW
     cv::dnn::blobFromImage(img, img);
 
-    std::vector<int64_t> dims = { 1, 3, input_height, input_width };
+    std::vector<int64_t> dims = {1, 3, input_height, input_width};
     size_t input_tensor_size = 1 * 3 * input_height * input_width;
 
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(
@@ -81,25 +92,26 @@ std::string ImageRecognizer::PredictFromMat(const cv::Mat& img_raw) {
         memory_info, img.ptr<float>(), input_tensor_size, dims.data(), dims.size());
 
     // Run inference
-    const char* input_names[] = { input_name.c_str() };
-    const char* output_names[] = { output_name.c_str() };
+    const char *input_names[] = {input_name.c_str()};
+    const char *output_names[] = {output_name.c_str()};
 
     auto output_tensors = session->Run(
-        Ort::RunOptions{ nullptr },
+        Ort::RunOptions{nullptr},
         input_names, &input_tensor, 1,
-        output_names, 1
-    );
+        output_names, 1);
 
-    float* output_data = output_tensors.front().GetTensorMutableData<float>();
+    float *output_data = output_tensors.front().GetTensorMutableData<float>();
 
     // argmax
     int num_classes = labels.empty() ? 1000 : (int)labels.size();
     int pred_class = std::max_element(output_data, output_data + num_classes) - output_data;
 
-    if (pred_class >= 0 && pred_class < (int)labels.size()) {
+    if (pred_class >= 0 && pred_class < (int)labels.size())
+    {
         return labels[pred_class];
     }
-    else {
+    else
+    {
         return "Unknown";
     }
 }

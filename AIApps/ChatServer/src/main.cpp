@@ -6,25 +6,26 @@
 #include <muduo/base/Logging.h>
 #include <muduo/net/EventLoop.h>
 
-#include"../include/ChatServer.h"
+#include "../include/ChatServer.h"
 
 const std::string RABBITMQ_HOST = "localhost";
 const std::string QUEUE_NAME = "sql_queue";
 const int THREAD_NUM = 2;
 
-void executeMysql(const std::string sql) {
+void executeMysql(const std::string sql)
+{
     http::MysqlUtil mysqlUtil_;
     mysqlUtil_.executeUpdate(sql);
 }
 
-
-int main(int argc, char* argv[]) {
-	LOG_INFO << "pid = " << getpid();
-	std::string serverName = "ChatServer";
-	int port = 80;
-    // ²ÎÊý½âÎö
+int main(int argc, char *argv[])
+{
+    LOG_INFO << "pid = " << getpid();
+    std::string serverName = "ChatServer";
+    int port = 80;
+    // å‚æ•°è§£æž
     int opt;
-    const char* str = "p:";
+    const char *str = "p:";
     while ((opt = getopt(argc, argv, str)) != -1)
     {
         switch (opt)
@@ -41,13 +42,13 @@ int main(int argc, char* argv[]) {
     muduo::Logger::setLogLevel(muduo::Logger::WARN);
     ChatServer server(port, serverName);
     server.setThreadNum(4);
-    //Õâ±ßÒ»¶¨Òª½øÐÐË¯Ãß²Ù×÷£¬Èç¹û·ÅÔÚChatServer¹¹Ôìº¯ÊýÖÐ³õÊ¼»á³öÏÖ¿¨ËÀÏÖÏó
+    // ç­‰å¾… 2 ç§’ï¼Œç¡®ä¿ RabbitMQ é˜Ÿåˆ—å·²åˆ›å»º
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    //³õÊ¼»¯chat_message±íµ½chatInformationÖÐ
-    server.initChatMessage();    
+    // åˆå§‹åŒ– chat_message è¡¨ï¼Œåˆ›å»º chatInformation æ˜ å°„
+    server.initChatMessage();
 
-    // ³õÊ¼»¯Ïû·Ñ¶ÓÁÐµÄÏß³Ì³Ø£¬´«Èë´¦Àíº¯Êý£¨Õâ±ßËùÓÐÏß³Ì¶¼×öÍ³Ò»µÄ´¦Àíº¯ÊýÂß¼­£©
-    //Èç¹ûÒª×öµ½Ð­³Ì¿âÄÇÖÖÃ¿¸öÏß³Ì×ö²»Í¬µÄÈÎÎñ£¬ÄÇÃ´Ò²¿ÉÒÔÔÙ·âÒ»²ãÈÎÎñÀà£¬Ïß³ÌÄÃÈ¡ÈÎÎñÀàÖÐµÄº¯Êý½øÐÐÖ´ÐÐ²Ù×÷
+    // åˆå§‹åŒ– RabbitMQ çº¿ç¨‹æ± ï¼Œç”¨äºŽå¤„ç† SQL é˜Ÿåˆ—ä¸­çš„æ¶ˆæ¯
+    // æ¯ä¸ªçº¿ç¨‹ä»Žé˜Ÿåˆ—ä¸­èŽ·å–ä¸€æ¡æ¶ˆæ¯å¹¶æ‰§è¡Œ
     RabbitMQThreadPool pool(RABBITMQ_HOST, QUEUE_NAME, THREAD_NUM, executeMysql);
     pool.start();
 

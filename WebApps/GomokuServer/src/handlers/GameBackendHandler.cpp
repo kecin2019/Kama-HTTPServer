@@ -1,6 +1,6 @@
 #include "../include/handlers/GameBackendHandler.h"
 
-void GameBackendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void GameBackendHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
     // 后台界面
     // 获取当前在线人数、历史最高在线人数、数据库中已注册用户总数

@@ -8,20 +8,21 @@
 #include <fstream>
 #include <iostream>
 
-class ImageRecognizer {
+class ImageRecognizer
+{
 public:
-    // ¹¹Ôìº¯Êı£º´«ÈëÄ£ĞÍÂ·¾¶ºÍ±êÇ©Â·¾¶
-    explicit ImageRecognizer(const std::string& model_path,
-        const std::string& label_path = "/root/imagenet_classes.txt");
+    // æ„é€ å‡½æ•°ï¼ŒåŠ è½½æ¨¡å‹å’Œæ ‡ç­¾æ–‡ä»¶
+    explicit ImageRecognizer(const std::string &model_path,
+                             const std::string &label_path = "/root/imagenet_classes.txt");
 
-    // ´ÓÎÄ¼şÔ¤²â
-    std::string PredictFromFile(const std::string& image_path);
+    // ä»æ–‡ä»¶è·¯å¾„é¢„æµ‹å›¾åƒç±»åˆ«
+    std::string PredictFromFile(const std::string &image_path);
 
-    // ´ÓÄÚ´æÊı¾İÔ¤²â£¨Ç°¶ËÉÏ´«µÄÍ¼Æ¬¶ş½øÖÆÁ÷£©
-    std::string PredictFromBuffer(const std::vector<unsigned char>& image_data);
+    // ä»å†…å­˜ç¼“å†²åŒºé¢„æµ‹å›¾åƒç±»åˆ«
+    std::string PredictFromBuffer(const std::vector<unsigned char> &image_data);
 
-    // ´Ó OpenCV Mat Ô¤²â
-    std::string PredictFromMat(const cv::Mat& img);
+    // ä» OpenCV Mat é¢„æµ‹å›¾åƒç±»åˆ«
+    std::string PredictFromMat(const cv::Mat &img);
 
 private:
     Ort::Env env;
@@ -33,7 +34,7 @@ private:
     std::vector<int64_t> input_shape;
     int input_height{}, input_width{};
 
-    std::vector<std::string> labels; // Àà±ğ±êÇ©±í
+    std::vector<std::string> labels; // ç±»åˆ«æ ‡ç­¾
 
-    void LoadLabels(const std::string& label_path);
+    void LoadLabels(const std::string &label_path);
 };

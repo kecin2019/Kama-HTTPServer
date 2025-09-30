@@ -1,37 +1,37 @@
 #include "../include/handlers/AIUploadSendHandler.h"
 
-
-void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
     try
     {
-        // ¼ì²éÓÃ»§ÊÇ·ñÒÑµÇÂ¼
+        // æ£€æŸ¥ç”¨æˆ·æ˜¯å¦å·²ç™»å½•
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // ÓÃ»§Î´µÇÂ¼£¬·µ»ØÎ´ÊÚÈ¨´íÎó
+            // ç”¨æˆ·æœªç™»å½•ï¼Œè¿”å›žæœªæŽˆæƒé”™è¯¯
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                "Unauthorized", true, "application/json", errorBody.size(),
-                errorBody, resp);
+                                 "Unauthorized", true, "application/json", errorBody.size(),
+                                 errorBody, resp);
             return;
         }
-        //´¦Àí¶ÔÓ¦Á÷³Ìstart
-        // 1. ½âÎö JSON ÇëÇóÌå
+        // start
+        //  1. è§£æžè¯·æ±‚ä½“ä¸­çš„JSONæ•°æ®
         int userId = std::stoi(session->getValue("userId"));
         std::shared_ptr<ImageRecognizer> ImageRecognizerPtr;
         {
             std::lock_guard<std::mutex> lock(server_->mutexForImageRecognizerMap);
-            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end()) {
-                // ²åÈëÒ»¸öÐÂµÄ ImageRecognizer
+            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end())
+            {
+                // ä¸ºç”¨æˆ·åˆ›å»ºæ–°çš„ ImageRecognizer
                 server_->ImageRecognizerMap.emplace(
                     userId,
-                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx")  //todo:ÐèÒª½«/path/to/model.onnx¸ü¸Ä³ÉÕæÊµÂ·¾¶
+                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx") // todo:éœ€è¦æ ¹æ®å®žé™…æ¨¡åž‹è·¯å¾„ä¿®æ”¹
                 );
             }
             ImageRecognizerPtr = server_->ImageRecognizerMap[userId];
@@ -40,10 +40,13 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         auto body = req.getBody();
         std::string filename;
         std::string imageBase64;
-        if (!body.empty()) {
+        if (!body.empty())
+        {
             auto j = json::parse(body);
-            if (j.contains("filename")) filename = j["filename"];
-            if (j.contains("image")) imageBase64 = j["image"];
+            if (j.contains("filename"))
+                filename = j["filename"];
+            if (j.contains("image"))
+                imageBase64 = j["image"];
         }
         if (imageBase64.empty())
         {
@@ -52,18 +55,18 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
 
         std::string decodedData = base64_decode(imageBase64);
         std::vector<uchar> imgData(decodedData.begin(), decodedData.end());
-        //¿ªÊ¼½øÐÐÊ¶±ð
+        //  è°ƒç”¨ ImageRecognizer è¿›è¡Œé¢„æµ‹
         std::string className = ImageRecognizerPtr->PredictFromBuffer(imgData);
 
-        // 4. ¹¹ÔìÏìÓ¦
+        // 4. æž„é€ æˆåŠŸå“åº”
         json successResp;
         successResp["success"] = "ok";
         successResp["filename"] = filename;
         successResp["class_name"] = className;
-        //Ä£ÐÍ¶ÔÕâ¸öµÄÖÃÐÅ¶È
-        successResp["confidence"] = 0.95; // todo:ÕâÀïÐ´ËÀÁË£¬ºóÐøÄã¿ÉÒÔ´ÓÄ£ÐÍÀï·µ»ØÕæÊµµÄ
+        //  3. æž„é€ æˆåŠŸå“åº”
+        successResp["confidence"] = 0.95; // todo:æ ¹æ®å®žé™…ç½®ä¿¡åº¦ä¿®æ”¹
 
-        //end
+        // end
         std::string successBody = successResp.dump(4);
 
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
@@ -72,11 +75,10 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         resp->setContentLength(successBody.size());
         resp->setBody(successBody);
         return;
-
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        // ²¶»ñÒì³££¬·µ»Ø´íÎóÐÅÏ¢
+        //  å¤„ç†å¼‚å¸¸æƒ…å†µï¼Œè¿”å›žé”™è¯¯å“åº”
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();
@@ -88,6 +90,3 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         resp->setBody(failureBody);
     }
 }
-
-
-

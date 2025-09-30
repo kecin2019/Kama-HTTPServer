@@ -5,8 +5,9 @@
 class AiGameMoveHandler : public http::router::RouterHandler
 {
 public:
-    explicit AiGameMoveHandler(GomokuServer* server) : server_(server) {}
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
+    explicit AiGameMoveHandler(GomokuServer *server) : server_(server) {}
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
+
 private:
-    GomokuServer* server_;
+    GomokuServer *server_;
 };

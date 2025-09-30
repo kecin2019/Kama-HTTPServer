@@ -1,6 +1,6 @@
 #include "../include/handlers/RegisterHandler.h"
 
-void RegisterHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void RegisterHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
     // 解析body(json格式)
     json parsed = json::parse(req.getBody());
@@ -13,7 +13,7 @@ void RegisterHandler::handle(const http::HttpRequest& req, http::HttpResponse* r
     {
         // 插入成功
         // 封装成功响应
-        json successResp;   
+        json successResp;
         successResp["status"] = "success";
         successResp["message"] = "Register successful";
         successResp["userId"] = userId;
@@ -50,7 +50,7 @@ int RegisterHandler::insertUser(const std::string &username, const std::string &
         std::string sql = "INSERT INTO users (username, password) VALUES ('" + username + "', '" + password + "')";
         mysqlUtil_.executeUpdate(sql);
         std::string sql2 = "SELECT id FROM users WHERE username = '" + username + "'";
-        sql::ResultSet* res = mysqlUtil_.executeQuery(sql2);
+        sql::ResultSet *res = mysqlUtil_.executeQuery(sql2);
         if (res->next())
         {
             return res->getInt("id");
@@ -62,7 +62,7 @@ int RegisterHandler::insertUser(const std::string &username, const std::string &
 bool RegisterHandler::isUserExist(const std::string &username)
 {
     std::string sql = "SELECT id FROM users WHERE username = '" + username + "'";
-    sql::ResultSet* res = mysqlUtil_.executeQuery(sql);
+    sql::ResultSet *res = mysqlUtil_.executeQuery(sql);
     if (res->next())
     {
         return true;

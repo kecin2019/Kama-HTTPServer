@@ -1,28 +1,28 @@
 #include "../include/handlers/AIMenuHandler.h"
 
-void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void AIMenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
-    // JSON ½âÎöÊ¹ÓÃ try catch ²¶»ñÒì³£
+    // JSON è§£æè¯·æ±‚ä½“
     try
     {
-        // ¼ì²éÓÃ»§ÊÇ·ñÒÑµÇÂ¼
+        // æ£€æŸ¥ç”¨æˆ·æ˜¯å¦å·²ç™»å½•
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // ÓÃ»§Î´µÇÂ¼£¬·µ»ØÎ´ÊÚÈ¨´íÎó
+            // ç”¨æˆ·æœªç™»å½•ï¼Œè¿”å›æœªæˆæƒé”™è¯¯
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                "Unauthorized", true, "application/json", errorBody.size(),
-                errorBody, resp);
+                                 "Unauthorized", true, "application/json", errorBody.size(),
+                                 errorBody, resp);
             return;
         }
 
-        // »ñÈ¡ÓÃ»§ĞÅÏ¢
+        // ä»ä¼šè¯ä¸­è·å–ç”¨æˆ·IDå’Œç”¨æˆ·å
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
@@ -35,10 +35,10 @@ void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* res
         }
 
         std::vector<char> buffer(fileOperater.size());
-        fileOperater.readFile(buffer); // ¶Á³öÎÄ¼şÊı¾İ
+        fileOperater.readFile(buffer); // è¯»å–HTMLæ–‡ä»¶å†…å®¹
         std::string htmlContent(buffer.data(), buffer.size());
 
-        // ÔÚHTMLÄÚÈİÖĞ²åÈëuserId
+        // åœ¨HTMLä¸­æ’å…¥userIdè„šæœ¬
         size_t headEnd = htmlContent.find("</head>");
         if (headEnd != std::string::npos)
         {
@@ -54,9 +54,9 @@ void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* res
         resp->setContentLength(htmlContent.size());
         resp->setBody(htmlContent);
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        // ²¶»ñÒì³££¬·µ»Ø´íÎóĞÅÏ¢
+        // å¤„ç†å¼‚å¸¸ï¼Œè¿”å›Bad Requesté”™è¯¯
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();

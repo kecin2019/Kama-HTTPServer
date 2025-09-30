@@ -24,11 +24,11 @@ void LogoutHandler::handle(const http::HttpRequest &req, http::HttpResponse *res
         session->clear();
         // 销毁会话
         server_->getSessionManager()->destroySession(session->getId());
-        
+
         json parsed = json::parse(req.getBody());
         int gameType = parsed["gameType"]; // fixme: 以后也换成从会话中获取
-        
-        {   // 释放资源
+
+        { // 释放资源
             std::lock_guard<std::mutex> lock(server_->mutexForOnlineUsers_);
             server_->onlineUsers_.erase(userId);
         }

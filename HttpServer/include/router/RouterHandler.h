@@ -6,15 +6,15 @@
 
 namespace http
 {
-namespace router
-{
+    namespace router
+    {
 
-class RouterHandler 
-{
-public:
-    virtual ~RouterHandler() = default;
-    virtual void handle(const HttpRequest& req, HttpResponse* resp) = 0;
-};
+        class RouterHandler
+        {
+        public:
+            virtual ~RouterHandler() = default;
+            virtual void handle(const HttpRequest &req, HttpResponse *resp) = 0;
+        };
 
-} // namespace router
+    } // namespace router
 } // namespace http

@@ -11,16 +11,14 @@
 #include <string>
 #include <vector>
 
-
 #include "../../../HttpServer/include/http/HttpServer.h"
 #include "../../../HttpServer/include/utils/MysqlUtil.h"
 #include "../../../HttpServer/include/utils/FileUtil.h"
 #include "../../../HttpServer/include/utils/JsonUtil.h"
-#include"AIUtil/AIHelper.h"
-#include"AIUtil/ImageRecognizer.h"
-#include"AIUtil/base64.h"
-#include"AIUtil/MQManager.h"
-
+#include "AIUtil/AIHelper.h"
+#include "AIUtil/ImageRecognizer.h"
+#include "AIUtil/base64.h"
+#include "AIUtil/MQManager.h"
 
 class ChatLoginHandler;
 class ChatRegisterHandler;
@@ -34,21 +32,21 @@ class AIMenuHandler;
 class AIUploadHandler;
 class AIUploadSendHandler;
 
-
-
-class ChatServer {
+class ChatServer
+{
 public:
 	ChatServer(int port,
-		const std::string& name,
-		muduo::net::TcpServer::Option option = muduo::net::TcpServer::kNoReusePort);
+			   const std::string &name,
+			   muduo::net::TcpServer::Option option = muduo::net::TcpServer::kNoReusePort);
 
 	void setThreadNum(int numThreads);
 	void start();
 	void initChatMessage();
+
 private:
 	friend class ChatLoginHandler;
 	friend class ChatRegisterHandler;
-	friend  ChatLogoutHandler;
+	friend ChatLogoutHandler;
 	friend class ChatHandler;
 	friend class ChatEntryHandler;
 	friend class ChatSendHandler;
@@ -62,37 +60,35 @@ private:
 	void initializeSession();
 	void initializeRouter();
 	void initializeMiddleware();
-	
 
 	void readDataFromMySQL();
 
-	void packageResp(const std::string& version, http::HttpResponse::HttpStatusCode statusCode,
-		const std::string& statusMsg, bool close, const std::string& contentType,
-		int contentLen, const std::string& body, http::HttpResponse* resp);
+	void packageResp(const std::string &version, http::HttpResponse::HttpStatusCode statusCode,
+					 const std::string &statusMsg, bool close, const std::string &contentType,
+					 int contentLen, const std::string &body, http::HttpResponse *resp);
 
 	void setSessionManager(std::unique_ptr<http::session::SessionManager> manager)
 	{
 		httpServer_.setSessionManager(std::move(manager));
 	}
-	http::session::SessionManager* getSessionManager() const
+	http::session::SessionManager *getSessionManager() const
 	{
 		return httpServer_.getSessionManager();
 	}
-	//¼àÌıÇ°¶ËµÄhttpServer
-	http::HttpServer	httpServer_;
-	//ºÍÊı¾İ¿â½»»¥
-	http::MysqlUtil		mysqlUtil_;
-	//±£Ö¤Ò»¸öÓÃ»§Ö»ÄÜÔÚÍ¬Ò»¸öµØµãµÇÂ¼Ò»´Î
-	std::unordered_map<int, bool>	onlineUsers_;
-	std::mutex	mutexForOnlineUsers_;
-	//Ã¿Ò»¸öÈË¶¼ÓĞ¶ÔÓ¦µÄ¶Ô»° userid->AIHelper
-	//×¢Òâ£º´æ·ÅÖ¸ÕëÊÇÒòÎªºóĞøĞèÒª¶ÔchatInformation[key]½øĞĞ¸ü¸Ä
-	//ÈôÖ±½Ó´æ·Å¶ÔÏó£¬²»´æ·ÅÖ¸Õë£¬ÄÇÃ´ÓÉÓÚunordered_map²»ÊÇÏß³Ì°²È«µÄ£¬ĞèÒª¼ÓËø¶ÔÆä
-	//ÀïÃæµÄvector½øĞĞ²åÈë²Ù×÷£¬ÄÇÃ´ÓÃ»§A·ÃÎÊAIµÄ²Ù×÷¾Í»áÑÏÖØÓ°Ïìµ½ÓÃ»§B
+	// èŠå¤©æœåŠ¡å™¨å®ä¾‹
+	http::HttpServer httpServer_;
+	// æ•°æ®åº“å·¥å…·ç±»å®ä¾‹
+	http::MysqlUtil mysqlUtil_;
+	// è®°å½•åœ¨çº¿ç”¨æˆ·çš„æ˜ å°„è¡¨ï¼Œç”¨æˆ·IDåˆ°æ˜¯å¦åœ¨çº¿çš„å¸ƒå°”å€¼
+	std::unordered_map<int, bool> onlineUsers_;
+	std::mutex mutexForOnlineUsers_;
+	// æ¯ä¸ªç”¨æˆ·çš„èŠå¤©ä¿¡æ¯æ˜ å°„è¡¨ï¼Œç”¨æˆ·IDåˆ°AIHelperæ™ºèƒ½æŒ‡é’ˆ
+	// è¯´æ˜ï¼šæ¯ä¸ªç”¨æˆ·åœ¨èŠå¤©è¿‡ç¨‹ä¸­å¯èƒ½ä¼šæœ‰å¤šä¸ªAIHelperå®ä¾‹ï¼Œæ¯ä¸ªå®ä¾‹å¯¹åº”ä¸€ä¸ªAIæ¨¡å‹
+	// æ³¨æ„ï¼šchatInformation[key]ä¸­çš„AIHelperå®ä¾‹æ˜¯åŠ¨æ€åˆ›å»ºçš„ï¼Œéœ€è¦åœ¨ä½¿ç”¨å‰æ£€æŸ¥æ˜¯å¦ä¸ºç©º
+	// è­¦å‘Šï¼šchatInformation[key]ä¸­çš„AIHelperå®ä¾‹åœ¨èŠå¤©è¿‡ç¨‹ä¸­å¯èƒ½ä¼šè¢«ä¿®æ”¹ï¼Œéœ€è¦æ³¨æ„çº¿ç¨‹å®‰å…¨é—®é¢˜
 	std::unordered_map<int, std::shared_ptr<AIHelper>> chatInformation;
-	std::mutex	mutexForChatInformation;
+	std::mutex mutexForChatInformation;
 
-	std::unordered_map<int, std::shared_ptr<ImageRecognizer> > ImageRecognizerMap;
-	std::mutex	mutexForImageRecognizerMap;
+	std::unordered_map<int, std::shared_ptr<ImageRecognizer>> ImageRecognizerMap;
+	std::mutex mutexForImageRecognizerMap;
 };
-

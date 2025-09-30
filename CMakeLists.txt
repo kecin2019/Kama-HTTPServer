@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(MultiApps)
 
-option(BUILD_AI_APPS "Build AI Apps" ON)
-option(BUILD_WEB_APPS "Build Web Apps" OFF)
+option(BUILD_AI_APPS "Build AI Apps" OFF)
+option(BUILD_WEB_APPS "Build Web Apps" ON)
 
 if(BUILD_AI_APPS)
     message(STATUS "Building AI Apps ...")

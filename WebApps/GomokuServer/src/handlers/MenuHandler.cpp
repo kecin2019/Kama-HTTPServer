@@ -17,7 +17,7 @@ void MenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                                "Unauthorized", true, "application/json", errorBody.size(),
+                                 "Unauthorized", true, "application/json", errorBody.size(),
                                  errorBody, resp);
             return;
         }

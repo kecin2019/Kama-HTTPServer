@@ -1,59 +1,62 @@
 #include "../include/handlers/ChatSendHandler.h"
 
-void ChatSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatSendHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
     try
     {
-        // ¼ì²éÓÃ»§ÊÇ·ñÒÑµÇÂ¼
+        // æ£€æŸ¥ç”¨æˆ·æ˜¯å¦å·²ç™»å½•
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // ÓÃ»§Î´µÇÂ¼£¬·µ»ØÎ´ÊÚÈ¨´íÎó
+            // ç”¨æˆ·æœªç™»å½•ï¼Œè¿”å›æœªæˆæƒé”™è¯¯å“åº”
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                "Unauthorized", true, "application/json", errorBody.size(),
-                errorBody, resp);
+                                 "Unauthorized", true, "application/json", errorBody.size(),
+                                 errorBody, resp);
             return;
         }
 
-        // »ñÈ¡ÓÃ»§ĞÅÏ¢ÒÔ¼°»ñÈ¡ÓÃ»§¶ÔÓ¦µÄ±íÊı¾İ
+        // ä»ä¼šè¯ä¸­è·å–ç”¨æˆ·IDå’Œç”¨æˆ·å
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
         std::shared_ptr<AIHelper> AIHelperPtr;
         {
             std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
-            if (server_->chatInformation.find(userId) == server_->chatInformation.end()) {
-                //´Ólinux»·¾³±äÁ¿ÖĞÄÃÈ¡¶ÔÓ¦µÄapi-key²¢³õÊ¼»¯Ò»¸öAIHelper
-                const char* apiKey = std::getenv("DASHSCOPE_API_KEY");
-                if (!apiKey) {
+            if (server_->chatInformation.find(userId) == server_->chatInformation.end())
+            {
+                // è¯¥ç”¨æˆ·è¿˜æœªåˆå§‹åŒ– AIHelperï¼Œæ ¹æ®ç¯å¢ƒå˜é‡åˆå§‹åŒ–
+                const char *apiKey = std::getenv("DASHSCOPE_API_KEY");
+                if (!apiKey)
+                {
                     std::cerr << "Error: DASHSCOPE_API_KEY not found in environment!" << std::endl;
                     return;
                 }
-                // ²åÈëÒ»¸öĞÂµÄ AIHelper
+                // åˆå§‹åŒ–æ–°çš„ AIHelper å¹¶å­˜å‚¨åˆ° chatInformation ä¸­
                 server_->chatInformation.emplace(
-                    userId,           
-                    std::make_shared<AIHelper>(apiKey)
-                );
+                    userId,
+                    std::make_shared<AIHelper>(apiKey));
             }
-            AIHelperPtr= server_->chatInformation[userId];
+            AIHelperPtr = server_->chatInformation[userId];
         }
 
         std::string userQuestion;
         auto body = req.getBody();
-        if (!body.empty()) {
+        if (!body.empty())
+        {
             auto j = json::parse(body);
-            if (j.contains("question")) userQuestion = j["question"];
+            if (j.contains("question"))
+                userQuestion = j["question"];
         }
-        //int userId, const std::string& userName, bool is_user, const std::string& userInput
-        AIHelperPtr->addMessage(userId, username,true,userQuestion);
+        // int userId, const std::string& userName, bool is_user, const std::string& userInput
+        AIHelperPtr->addMessage(userId, username, true, userQuestion);
 
-        std::string aiInformation=AIHelperPtr->chat(userId, username);
+        std::string aiInformation = AIHelperPtr->chat(userId, username);
         json successResp;
         successResp["success"] = true;
         successResp["Information"] = aiInformation;
@@ -66,9 +69,9 @@ void ChatSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* r
         resp->setBody(successBody);
         return;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        // ²¶»ñÒì³££¬·µ»Ø´íÎóĞÅÏ¢
+        // å¤„ç†å¼‚å¸¸æƒ…å†µï¼Œè¿”å›é”™è¯¯å“åº”
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();
@@ -80,12 +83,3 @@ void ChatSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* r
         resp->setBody(failureBody);
     }
 }
-
-
-
-
-
-
-
-
-
