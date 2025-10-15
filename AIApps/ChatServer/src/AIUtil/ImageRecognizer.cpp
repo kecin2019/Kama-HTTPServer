@@ -11,16 +11,16 @@ ImageRecognizer::ImageRecognizer(const std::string& model_path,
     session = std::make_unique<Ort::Session>(env, model_path.c_str(), session_options);
     allocator = std::make_unique<Ort::AllocatorWithDefaultOptions>();
 
-    // 获取输入输出名字
+
     input_name = session->GetInputNameAllocated(0, *allocator).get();
     output_name = session->GetOutputNameAllocated(0, *allocator).get();
 
-    // 假设输入是 [1,3,H,W]
+
     input_shape = session->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
     input_height = static_cast<int>(input_shape[2]);
     input_width = static_cast<int>(input_shape[3]);
 
-    // 加载标签文件
+
     LoadLabels(label_path);
 }
 

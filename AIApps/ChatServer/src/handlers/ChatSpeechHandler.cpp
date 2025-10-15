@@ -1,7 +1,7 @@
-#include "../include/handlers/AIUploadSendHandler.h"
+#include "../include/handlers/ChatSpeechHandler.h"
 
 
-void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatSpeechHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
 {
     try
     {
@@ -23,59 +23,50 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         }
 
         int userId = std::stoi(session->getValue("userId"));
-        std::shared_ptr<ImageRecognizer> ImageRecognizerPtr;
-        {
-            std::lock_guard<std::mutex> lock(server_->mutexForImageRecognizerMap);
-            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end()) {
+        std::string username = session->getValue("username");
 
-                server_->ImageRecognizerMap.emplace(
-                    userId,
-                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx")  //todo:Remove hard coding
-                );
-            }
-            ImageRecognizerPtr = server_->ImageRecognizerMap[userId];
-        }
+
+        std::string text;
 
         auto body = req.getBody();
-        std::string filename;
-        std::string imageBase64;
         if (!body.empty()) {
             auto j = json::parse(body);
-            if (j.contains("filename")) filename = j["filename"];
-            if (j.contains("image")) imageBase64 = j["image"];
-        }
-        if (imageBase64.empty())
-        {
-            throw std::runtime_error("No image data provided");
+            if (j.contains("text")) text = j["text"];
         }
 
-        std::string decodedData = base64_decode(imageBase64);
-        std::vector<uchar> imgData(decodedData.begin(), decodedData.end());
 
-        std::string className = ImageRecognizerPtr->PredictFromBuffer(imgData);
+        const char* secretEnv = std::getenv("BAIDU_CLIENT_SECRET");
+        const char* idEnv = std::getenv("BAIDU_CLIENT_ID");
 
+        if (!secretEnv) throw std::runtime_error("BAIDU_CLIENT_SECRET not found!");
+        if (!idEnv) throw std::runtime_error("BAIDU_CLIENT_ID not found!");
+
+        std::string clientSecret(secretEnv);
+        std::string clientId(idEnv);
+
+        AISpeechProcessor speechProcessor(clientId, clientSecret);
+        
+
+        std::string speechUrl = speechProcessor.synthesize(text,
+                                                           "mp3-16k", 
+                                                           "zh",  
+                                                            5, 
+                                                            5, 
+                                                            5 );  
 
         json successResp;
-        successResp["success"] = "ok";
-        successResp["filename"] = filename;
-        successResp["class_name"] = className;
-
-        successResp["confidence"] = 0.95; // todo:Calculating true confidence
-
-
+        successResp["success"] = true;
+        successResp["url"] = speechUrl;
         std::string successBody = successResp.dump(4);
-
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
         resp->setCloseConnection(false);
         resp->setContentType("application/json");
         resp->setContentLength(successBody.size());
         resp->setBody(successBody);
         return;
-
     }
     catch (const std::exception& e)
     {
-
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();
@@ -87,6 +78,12 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         resp->setBody(failureBody);
     }
 }
+
+
+
+
+
+
 
 
 

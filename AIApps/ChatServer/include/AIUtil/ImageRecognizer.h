@@ -10,17 +10,17 @@
 
 class ImageRecognizer {
 public:
-    // 构造函数：传入模型路径和标签路径
+    // Image model and label loading
     explicit ImageRecognizer(const std::string& model_path,
         const std::string& label_path = "/root/imagenet_classes.txt");
 
-    // 从文件预测
+    // Predict from file
     std::string PredictFromFile(const std::string& image_path);
 
-    // 从内存数据预测（前端上传的图片二进制流）
+    //PredictFromBuffer
     std::string PredictFromBuffer(const std::vector<unsigned char>& image_data);
 
-    // 从 OpenCV Mat 预测
+    // Predict from OpenCV Mat
     std::string PredictFromMat(const cv::Mat& img);
 
 private:
@@ -33,7 +33,7 @@ private:
     std::vector<int64_t> input_shape;
     int input_height{}, input_width{};
 
-    std::vector<std::string> labels; // 类别标签表
+    std::vector<std::string> labels; // 签
 
     void LoadLabels(const std::string& label_path);
 };

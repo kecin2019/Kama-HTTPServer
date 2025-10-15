@@ -16,6 +16,7 @@
 #include "../../../HttpServer/include/utils/MysqlUtil.h"
 #include "../../../HttpServer/include/utils/FileUtil.h"
 #include "../../../HttpServer/include/utils/JsonUtil.h"
+#include"AIUtil/AISpeechProcessor.h"
 #include"AIUtil/AIHelper.h"
 #include"AIUtil/ImageRecognizer.h"
 #include"AIUtil/base64.h"
@@ -35,6 +36,9 @@ class AIUploadHandler;
 class AIUploadSendHandler;
 
 
+class ChatCreateAndSendHandler;
+class ChatSessionsHandler;
+class ChatSpeechHandler;
 
 class ChatServer {
 public:
@@ -57,6 +61,10 @@ private:
 	friend class AIUploadSendHandler;
 	friend class ChatHistoryHandler;
 
+	friend class ChatCreateAndSendHandler;
+	friend class ChatSessionsHandler;
+	friend class ChatSpeechHandler;
+
 private:
 	void initialize();
 	void initializeSession();
@@ -78,21 +86,26 @@ private:
 	{
 		return httpServer_.getSessionManager();
 	}
-	//监听前端的httpServer
+
 	http::HttpServer	httpServer_;
-	//和数据库交互
+
 	http::MysqlUtil		mysqlUtil_;
-	//保证一个用户只能在同一个地点登录一次
+
 	std::unordered_map<int, bool>	onlineUsers_;
 	std::mutex	mutexForOnlineUsers_;
-	//每一个人都有对应的对话 userid->AIHelper
-	//注意：存放指针是因为后续需要对chatInformation[key]进行更改
-	//若直接存放对象，不存放指针，那么由于unordered_map不是线程安全的，需要加锁对其
-	//里面的vector进行插入操作，那么用户A访问AI的操作就会严重影响到用户B
-	std::unordered_map<int, std::shared_ptr<AIHelper>> chatInformation;
+
+	
+
+	// std::unordered_map<int, std::shared_ptr<AIHelper>> chatInformation;
+
+	std::unordered_map<int, std::unordered_map<std::string,std::shared_ptr<AIHelper> > > chatInformation;
 	std::mutex	mutexForChatInformation;
 
 	std::unordered_map<int, std::shared_ptr<ImageRecognizer> > ImageRecognizerMap;
 	std::mutex	mutexForImageRecognizerMap;
+
+	std::unordered_map<int,std::vector<std::string> > sessionsIdsMap;
+	std::mutex mutexForSessionsId;
+
 };
 

@@ -1,7 +1,7 @@
-#include "../include/handlers/AIUploadSendHandler.h"
+#include "../include/handlers/ChatCreateAndSendHandler.h"
 
 
-void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
+void ChatCreateAndSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
 {
     try
     {
@@ -22,47 +22,51 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
             return;
         }
 
-        int userId = std::stoi(session->getValue("userId"));
-        std::shared_ptr<ImageRecognizer> ImageRecognizerPtr;
-        {
-            std::lock_guard<std::mutex> lock(server_->mutexForImageRecognizerMap);
-            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end()) {
 
-                server_->ImageRecognizerMap.emplace(
-                    userId,
-                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx")  //todo:Remove hard coding
-                );
-            }
-            ImageRecognizerPtr = server_->ImageRecognizerMap[userId];
-        }
+        int userId = std::stoi(session->getValue("userId"));
+        std::string username = session->getValue("username");
+
+        std::string userQuestion;
+        std::string modelType;
 
         auto body = req.getBody();
-        std::string filename;
-        std::string imageBase64;
         if (!body.empty()) {
             auto j = json::parse(body);
-            if (j.contains("filename")) filename = j["filename"];
-            if (j.contains("image")) imageBase64 = j["image"];
+            if (j.contains("question")) userQuestion = j["question"];
+
+
+            modelType = j.contains("modelType") ? j["modelType"].get<std::string>() : "1";
         }
-        if (imageBase64.empty())
+
+        AISessionIdGenerator generator;
+        std::string sessionId = generator.generate();
+        std::cout<<"ɵsessionIdΪ "<<sessionId<<std::endl;
+
+
+        std::shared_ptr<AIHelper> AIHelperPtr;
         {
-            throw std::runtime_error("No image data provided");
+            std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
+
+            auto& userSessions = server_->chatInformation[userId];
+
+            if (userSessions.find(sessionId) == userSessions.end()) {
+
+                userSessions.emplace( 
+                    sessionId,
+                    std::make_shared<AIHelper>()
+                );
+                server_->sessionsIdsMap[userId].push_back(sessionId);
+            }
+            AIHelperPtr= userSessions[sessionId];
+
         }
 
-        std::string decodedData = base64_decode(imageBase64);
-        std::vector<uchar> imgData(decodedData.begin(), decodedData.end());
-
-        std::string className = ImageRecognizerPtr->PredictFromBuffer(imgData);
-
-
+        std::string aiInformation=AIHelperPtr->chat(userId, username,sessionId, userQuestion, modelType);
         json successResp;
-        successResp["success"] = "ok";
-        successResp["filename"] = filename;
-        successResp["class_name"] = className;
-
-        successResp["confidence"] = 0.95; // todo:Calculating true confidence
-
-
+        successResp["success"] = true;
+        successResp["Information"] = aiInformation;
+        successResp["sessionId"] = sessionId;
+        
         std::string successBody = successResp.dump(4);
 
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
@@ -71,7 +75,6 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         resp->setContentLength(successBody.size());
         resp->setBody(successBody);
         return;
-
     }
     catch (const std::exception& e)
     {
@@ -87,6 +90,12 @@ void AIUploadSendHandler::handle(const http::HttpRequest& req, http::HttpRespons
         resp->setBody(failureBody);
     }
 }
+
+
+
+
+
+
 
 
 
