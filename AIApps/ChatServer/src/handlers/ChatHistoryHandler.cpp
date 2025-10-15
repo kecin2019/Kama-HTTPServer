@@ -4,12 +4,12 @@ void ChatHistoryHandler::handle(const http::HttpRequest& req, http::HttpResponse
 {
     try
     {
-        // 检查用户是否已登录
+
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // 用户未登录，返回未授权错误
+
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
@@ -21,30 +21,37 @@ void ChatHistoryHandler::handle(const http::HttpRequest& req, http::HttpResponse
             return;
         }
 
-        // 获取用户信息以及获取用户对应的表数据
+
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
+
+        std::string sessionId;
+        auto body = req.getBody();
+        if (!body.empty()) {
+            auto j = json::parse(body);
+            if (j.contains("sessionId")) sessionId = j["sessionId"];
+        }
+
         std::vector<std::pair<std::string, long long>> messages;
+
         {
             std::shared_ptr<AIHelper> AIHelperPtr;
             std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
-            if (server_->chatInformation.find(userId) == server_->chatInformation.end()) {
-                //从linux环境变量中拿取对应的api-key并初始化一个AIHelper
-                const char* apiKey = std::getenv("DASHSCOPE_API_KEY");
-                if (!apiKey) {
-                    std::cerr << "Error: DASHSCOPE_API_KEY not found in environment!" << std::endl;
-                    return;
-                }
-                // 插入一个新的 AIHelper
-                server_->chatInformation.emplace(
-                    userId,
-                    std::make_shared<AIHelper>(apiKey)
+
+            auto& userSessions = server_->chatInformation[userId];
+
+            if (userSessions.find(sessionId) == userSessions.end()) {
+
+                userSessions.emplace( 
+                    sessionId,
+                    std::make_shared<AIHelper>()
                 );
             }
-            AIHelperPtr = server_->chatInformation[userId];
+            AIHelperPtr= userSessions[sessionId];
             messages= AIHelperPtr->GetMessages();
         }
-        //start
+
+
         json successResp;
         successResp["success"] = true;
         successResp["history"] = json::array();
@@ -67,7 +74,7 @@ void ChatHistoryHandler::handle(const http::HttpRequest& req, http::HttpResponse
     }
     catch (const std::exception& e)
     {
-        // 捕获异常，返回错误信息
+
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();

@@ -2,15 +2,15 @@
 
 void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
 {
-    // JSON 解析使用 try catch 捕获异常
+
     try
     {
-        // 检查用户是否已登录
+
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // 用户未登录，返回未授权错误
+
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
@@ -22,7 +22,7 @@ void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* res
             return;
         }
 
-        // 获取用户信息
+
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
@@ -35,10 +35,10 @@ void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* res
         }
 
         std::vector<char> buffer(fileOperater.size());
-        fileOperater.readFile(buffer); // 读出文件数据
+        fileOperater.readFile(buffer); // 募
         std::string htmlContent(buffer.data(), buffer.size());
 
-        // 在HTML内容中插入userId
+
         size_t headEnd = htmlContent.find("</head>");
         if (headEnd != std::string::npos)
         {
@@ -56,7 +56,7 @@ void AIMenuHandler::handle(const http::HttpRequest& req, http::HttpResponse* res
     }
     catch (const std::exception& e)
     {
-        // 捕获异常，返回错误信息
+
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();

@@ -9,6 +9,11 @@
 #include"../include/handlers/AIUploadHandler.h"
 #include"../include/handlers/ChatHistoryHandler.h"
 
+
+#include"../include/handlers/ChatCreateAndSendHandler.h"
+#include"../include/handlers/ChatSessionsHandler.h"
+#include"../include/handlers/ChatSpeechHandler.h"
+
 #include "../include/ChatServer.h"
 #include "../../../HttpServer/include/http/HttpRequest.h"
 #include "../../../HttpServer/include/http/HttpResponse.h"
@@ -30,32 +35,25 @@ ChatServer::ChatServer(int port,
 void ChatServer::initialize() {
     std::cout << "ChatServer initialize start  ! " << std::endl;
 	http::MysqlUtil::init("tcp://127.0.0.1:3306", "root", "123456", "ChatHttpServer", 5);
-    // 初始化会话
+
     initializeSession();
-    // 初始化中间件
+
     initializeMiddleware();
-    // 初始化路由
+
     initializeRouter();
 }
 
 void ChatServer::initChatMessage() {
-    //遍历chat_message所有数据，将指定user_id对应消息放入到chatInformation中
+
     std::cout << "initChatMessage start ! " << std::endl;
     readDataFromMySQL();
     std::cout << "initChatMessage success ! " << std::endl;
 }
 
 void ChatServer::readDataFromMySQL() {
-    
-    
-    const char* apiKey = std::getenv("DASHSCOPE_API_KEY");
-    if (!apiKey) {
-        std::cerr << "Error: DASHSCOPE_API_KEY not found in environment!" << std::endl;
-        return;
-    }
 
-    // SQL 查询
-    std::string sql = "SELECT id, username, is_user, content, ts FROM chat_message ORDER BY ts ASC, id ASC";
+
+    std::string sql = "SELECT id, username,session_id, is_user, content, ts FROM chat_message ORDER BY ts ASC, id ASC";
 
     sql::ResultSet* res;
     try {
@@ -68,40 +66,40 @@ void ChatServer::readDataFromMySQL() {
 
     while (res->next()) {
         long long user_id = 0;
+        std::string session_id ;  
         std::string username, content;
         long long ts = 0;
         int is_user = 1;
 
         try {
-            user_id = res->getInt64("id");
-            username = res->getString("username");
-            content = res->getString("content");
-            ts = res->getInt64("ts");
-            is_user = res->getInt("is_user");
+            user_id    = res->getInt64("id");       
+            session_id = res->getString("session_id");  
+            username   = res->getString("username");
+            content    = res->getString("content");
+            ts         = res->getInt64("ts");
+            is_user    = res->getInt("is_user");
         }
         catch (const std::exception& e) {
             std::cerr << "Failed to read row: " << e.what() << std::endl;
-            continue; // 跳过异常行
+            continue; 
         }
 
-        // 找到或创建 AIHelper
+        auto& userSessions = chatInformation[user_id];
+
         std::shared_ptr<AIHelper> helper;
-        auto it = chatInformation.find(user_id);
-        if (it == chatInformation.end()) {
-            helper = std::make_shared<AIHelper>(apiKey);
-            chatInformation[user_id] = helper;
-        }
-        else {
-            helper = it->second;
+        auto itSession = userSessions.find(session_id);
+        if (itSession == userSessions.end()) {
+            helper = std::make_shared<AIHelper>();
+            userSessions[session_id] = helper;
+			sessionsIdsMap[user_id].push_back(session_id);
+        } else {
+            helper = itSession->second;
         }
 
-        // 恢复消息
         helper->restoreMessage(content, ts);
     }
 
     std::cout << "readDataFromMySQL finished" << std::endl;
-
-     
 }
 
 
@@ -117,45 +115,48 @@ void ChatServer::start() {
 
 
 void ChatServer::initializeRouter() {
-    // 注册url回调处理器
-    // 登录注册入口页面
+
     httpServer_.Get("/", std::make_shared<ChatEntryHandler>(this));
     httpServer_.Get("/entry", std::make_shared<ChatEntryHandler>(this));
-    // 登录
+    
     httpServer_.Post("/login", std::make_shared<ChatLoginHandler>(this));
-    // 注册
+    
     httpServer_.Post("/register", std::make_shared<ChatRegisterHandler>(this));
-    //登出
+    
     httpServer_.Post("/user/logout", std::make_shared<ChatLogoutHandler>(this));
-    //聊天页面入口
+
     httpServer_.Get("/chat", std::make_shared<ChatHandler>(this));
-    //聊天请求
+
     httpServer_.Post("/chat/send", std::make_shared<ChatSendHandler>(this));
-    //菜单页面
+ 
     httpServer_.Get("/menu", std::make_shared<AIMenuHandler>(this));
-    //上传页面入口
+    
     httpServer_.Get("/upload", std::make_shared<AIUploadHandler>(this));
-    //上传请求
+   
     httpServer_.Post("/upload/send", std::make_shared<AIUploadSendHandler>(this));
-    //同步历史数据（将上一次登录的数据返回给前端渲染）
+    
     httpServer_.Post("/chat/history", std::make_shared<ChatHistoryHandler>(this));
 
+    
+    httpServer_.Post("/chat/send-new-session", std::make_shared<ChatCreateAndSendHandler>(this));
+    httpServer_.Get("/chat/sessions", std::make_shared<ChatSessionsHandler>(this));
 
+    httpServer_.Post("/chat/tts", std::make_shared<ChatSpeechHandler>(this));
 }
 
 void ChatServer::initializeSession() {
-    // 创建会话存储
+
     auto sessionStorage = std::make_unique<http::session::MemorySessionStorage>();
-    // 创建会话管理器
+
     auto sessionManager = std::make_unique<http::session::SessionManager>(std::move(sessionStorage));
-    // 设置会话管理器
+
     setSessionManager(std::move(sessionManager));
 }
 
 void ChatServer::initializeMiddleware() {
-    // 创建中间件
+
     auto corsMiddleware = std::make_shared<http::middleware::CorsMiddleware>();
-    // 添加中间件
+
     httpServer_.addMiddleware(corsMiddleware);
 }
 
@@ -190,7 +191,7 @@ void ChatServer::packageResp(const std::string& version,
     catch (const std::exception& e)
     {
         LOG_ERROR << "Error in packageResp: " << e.what();
-        // 设置一个基本的错误响应
+
         resp->setStatusCode(http::HttpResponse::k500InternalServerError);
         resp->setStatusMessage("Internal Server Error");
         resp->setCloseConnection(true);
