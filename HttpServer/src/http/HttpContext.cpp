@@ -15,6 +15,7 @@ namespace http
         {
             if (state_ == kExpectRequestLine)
             {
+                // 查找 CRLF 序列（即 "\r\n"，回车符 + 换行符）的位置，返回指向 "\r" 的指针
                 const char *crlf = buf->findCRLF(); // 注意这个返回值边界可能有错
                 if (crlf)
                 {
@@ -55,7 +56,7 @@ namespace http
                             std::string contentLength = request_.getHeader("Content-Length");
                             if (!contentLength.empty())
                             {
-                                request_.setContentLength(std::stoi(contentLength));
+                                request_.setContentLength(std::stoi(contentLength)); // 将字符串类型转换为整数类型
                                 if (request_.contentLength() > 0)
                                 {
                                     state_ = kExpectBody;

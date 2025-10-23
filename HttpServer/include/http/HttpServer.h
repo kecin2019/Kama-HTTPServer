@@ -39,7 +39,7 @@ namespace http
         HttpServer(int port,
                    const std::string &name,
                    bool useSSL = false,
-                   muduo::net::TcpServer::Option option = muduo::net::TcpServer::kNoReusePort);
+                   muduo::net::TcpServer::Option option = muduo::net::TcpServer::kNoReusePort); // option 默认禁止端口复用
 
         void setThreadNum(int numThreads)
         {
@@ -129,8 +129,8 @@ namespace http
         void handleRequest(const HttpRequest &req, HttpResponse *resp);
 
     private:
-        muduo::net::InetAddress listenAddr_; // 监听地址
-        muduo::net::TcpServer server_;
+        muduo::net::InetAddress listenAddr_;                      // 监听地址
+        muduo::net::TcpServer server_;                            // TCP 服务器
         muduo::net::EventLoop mainLoop_;                          // 主循环
         HttpCallback httpCallback_;                               // 回调函数
         router::Router router_;                                   // 路由

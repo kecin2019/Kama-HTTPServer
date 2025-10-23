@@ -69,7 +69,7 @@ namespace http
                 sslConns_[conn] = std::move(sslConn);
                 sslConns_[conn]->startHandshake();
             }
-            conn->setContext(HttpContext());
+            conn->setContext(HttpContext()); // 先注册一个空的HttpContext对象
         }
         else
         {
@@ -116,8 +116,8 @@ namespace http
                 }
             }
             // HttpContext对象用于解析出buf中的请求报文，并把报文的关键信息封装到HttpRequest对象中
-            HttpContext *context = boost::any_cast<HttpContext>(conn->getMutableContext());
-            if (!context->parseRequest(buf, receiveTime)) // 解析一个http请求
+            HttpContext *context = boost::any_cast<HttpContext>(conn->getMutableContext()); // 返回一个可修改的HttpContext对象指针
+            if (!context->parseRequest(buf, receiveTime))                                   // 解析一个http请求
             {
                 // 如果解析http报文过程中出错
                 conn->send("HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -147,7 +147,7 @@ namespace http
         HttpResponse response(close);
 
         // 根据请求报文信息来封装响应报文对象
-        httpCallback_(req, &response); // 执行onHttpCallback函数
+        httpCallback_(req, &response); // 回调用户注册的函数，这里是handleRequest函数
 
         // 可以给response设置一个成员，判断是否请求的是文件，如果是文件设置为true，并且存在文件位置在这里send出去。
         muduo::net::Buffer buf;

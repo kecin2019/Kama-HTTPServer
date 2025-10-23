@@ -80,7 +80,7 @@ namespace http
         // 按 & 分割多个参数
         while ((pos = argumentStr.find('&', prev)) != std::string::npos)
         {
-            std::string pair = argumentStr.substr(prev, pos - prev);
+            std::string pair = argumentStr.substr(prev, pos - prev); // [prev, pos - prev)
             std::string::size_type equalPos = pair.find('=');
 
             if (equalPos != std::string::npos)

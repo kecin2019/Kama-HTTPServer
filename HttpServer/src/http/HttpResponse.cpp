@@ -8,7 +8,7 @@ namespace http
         // HttpResponse封装的信息格式化输出
         char buf[32];
         // 为什么不把状态信息放入格式化字符串中，因为状态信息有长有短，不方便定义一个固定大小的内存存储
-        snprintf(buf, sizeof buf, "%s %d ", httpVersion_.c_str(), statusCode_);
+        snprintf(buf, sizeof(buf), "%s %d ", httpVersion_.c_str(), statusCode_);
 
         outputBuf->append(buf);
         outputBuf->append(statusMessage_);
