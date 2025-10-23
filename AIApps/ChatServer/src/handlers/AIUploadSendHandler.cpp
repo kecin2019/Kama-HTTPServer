@@ -4,12 +4,12 @@ void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpRespons
 {
     try
     {
-        // 检查用户是否已登录
+
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // 用户未登录，返回未授权错误
+
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
@@ -20,18 +20,16 @@ void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpRespons
                                  errorBody, resp);
             return;
         }
-        // start
-        //  1. 解析请求体中的JSON数据
+
         int userId = std::stoi(session->getValue("userId"));
         std::shared_ptr<ImageRecognizer> ImageRecognizerPtr;
         {
             std::lock_guard<std::mutex> lock(server_->mutexForImageRecognizerMap);
-            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end())
-            {
-                // 为用户创建新的 ImageRecognizer
+            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end()) {
+
                 server_->ImageRecognizerMap.emplace(
                     userId,
-                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx") // todo:需要根据实际模型路径修改
+                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx")  //todo:Remove hard coding
                 );
             }
             ImageRecognizerPtr = server_->ImageRecognizerMap[userId];
@@ -55,18 +53,18 @@ void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpRespons
 
         std::string decodedData = base64_decode(imageBase64);
         std::vector<uchar> imgData(decodedData.begin(), decodedData.end());
-        //  调用 ImageRecognizer 进行预测
+
         std::string className = ImageRecognizerPtr->PredictFromBuffer(imgData);
 
-        // 4. 构造成功响应
+
         json successResp;
         successResp["success"] = "ok";
         successResp["filename"] = filename;
         successResp["class_name"] = className;
-        //  3. 构造成功响应
-        successResp["confidence"] = 0.95; // todo:根据实际置信度修改
 
-        // end
+        successResp["confidence"] = 0.95; // todo:Calculating true confidence
+
+
         std::string successBody = successResp.dump(4);
 
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
@@ -78,7 +76,7 @@ void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpRespons
     }
     catch (const std::exception &e)
     {
-        //  处理异常情况，返回错误响应
+
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();

@@ -3,14 +3,15 @@
 
 void ChatHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
-    // JSON 解析请求体 Try-Catch 异常处理
+
     try
     {
+
         auto session = server_->getSessionManager()->getSession(req, resp);
         LOG_INFO << "session->getValue(\"isLoggedIn\") = " << session->getValue("isLoggedIn");
         if (session->getValue("isLoggedIn") != "true")
         {
-            // 用户未登录，返回 401 未授权错误
+
             json errorResp;
             errorResp["status"] = "error";
             errorResp["message"] = "Unauthorized";
@@ -22,7 +23,7 @@ void ChatHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
             return;
         }
 
-        // 从会话中获取用户ID和用户名
+
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
@@ -35,10 +36,10 @@ void ChatHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
         }
 
         std::vector<char> buffer(fileOperater.size());
-        fileOperater.readFile(buffer); // 读取文件内容到 buffer
+        fileOperater.readFile(buffer); 
         std::string htmlContent(buffer.data(), buffer.size());
 
-        // 在 HTML 中插入用户ID
+
         size_t headEnd = htmlContent.find("</head>");
         if (headEnd != std::string::npos)
         {
@@ -56,7 +57,7 @@ void ChatHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
     }
     catch (const std::exception &e)
     {
-        // 处理 JSON 解析异常，返回 400 错误
+
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();

@@ -1,6 +1,7 @@
-#include "../include/handlers/ChatHistoryHandler.h"
+#include "../include/handlers/ChatCreateAndSendHandler.h"
 
-void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
+
+void ChatCreateAndSendHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
 {
     try
     {
@@ -16,8 +17,8 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                                 "Unauthorized", true, "application/json", errorBody.size(),
-                                 errorBody, resp);
+                "Unauthorized", true, "application/json", errorBody.size(),
+                errorBody, resp);
             return;
         }
 
@@ -25,17 +26,25 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
-        std::string sessionId;
+        std::string userQuestion;
+        std::string modelType;
+
         auto body = req.getBody();
         if (!body.empty()) {
             auto j = json::parse(body);
-            if (j.contains("sessionId")) sessionId = j["sessionId"];
+            if (j.contains("question")) userQuestion = j["question"];
+
+
+            modelType = j.contains("modelType") ? j["modelType"].get<std::string>() : "1";
         }
 
-        std::vector<std::pair<std::string, long long>> messages;
+        AISessionIdGenerator generator;
+        std::string sessionId = generator.generate();
+        std::cout<<"ɵsessionIdΪ "<<sessionId<<std::endl;
 
+
+        std::shared_ptr<AIHelper> AIHelperPtr;
         {
-            std::shared_ptr<AIHelper> AIHelperPtr;
             std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
 
             auto& userSessions = server_->chatInformation[userId];
@@ -46,24 +55,18 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
                     sessionId,
                     std::make_shared<AIHelper>()
                 );
+                server_->sessionsIdsMap[userId].push_back(sessionId);
             }
             AIHelperPtr= userSessions[sessionId];
-            messages= AIHelperPtr->GetMessages();
+
         }
 
-
+        std::string aiInformation=AIHelperPtr->chat(userId, username,sessionId, userQuestion, modelType);
         json successResp;
         successResp["success"] = true;
-        successResp["history"] = json::array();
-
-        for (size_t i = 0; i < messages.size(); ++i)
-        {
-            json msgJson;
-            msgJson["is_user"] = (i % 2 == 0);
-            msgJson["content"] = messages[i].first;
-            successResp["history"].push_back(msgJson);
-        }
-
+        successResp["Information"] = aiInformation;
+        successResp["sessionId"] = sessionId;
+        
         std::string successBody = successResp.dump(4);
 
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
@@ -73,7 +76,7 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
         resp->setBody(successBody);
         return;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
 
         json failureResp;
@@ -87,3 +90,12 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
         resp->setBody(failureBody);
     }
 }
+
+
+
+
+
+
+
+
+

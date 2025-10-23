@@ -1,6 +1,7 @@
-#include "../include/handlers/ChatHistoryHandler.h"
+#include "../include/handlers/ChatSpeechHandler.h"
 
-void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
+
+void ChatSpeechHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
 {
     try
     {
@@ -16,56 +17,47 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                                 "Unauthorized", true, "application/json", errorBody.size(),
-                                 errorBody, resp);
+                "Unauthorized", true, "application/json", errorBody.size(),
+                errorBody, resp);
             return;
         }
-
 
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
-        std::string sessionId;
+
+        std::string text;
+
         auto body = req.getBody();
         if (!body.empty()) {
             auto j = json::parse(body);
-            if (j.contains("sessionId")) sessionId = j["sessionId"];
+            if (j.contains("text")) text = j["text"];
         }
 
-        std::vector<std::pair<std::string, long long>> messages;
 
-        {
-            std::shared_ptr<AIHelper> AIHelperPtr;
-            std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
+        const char* secretEnv = std::getenv("BAIDU_CLIENT_SECRET");
+        const char* idEnv = std::getenv("BAIDU_CLIENT_ID");
 
-            auto& userSessions = server_->chatInformation[userId];
+        if (!secretEnv) throw std::runtime_error("BAIDU_CLIENT_SECRET not found!");
+        if (!idEnv) throw std::runtime_error("BAIDU_CLIENT_ID not found!");
 
-            if (userSessions.find(sessionId) == userSessions.end()) {
+        std::string clientSecret(secretEnv);
+        std::string clientId(idEnv);
 
-                userSessions.emplace( 
-                    sessionId,
-                    std::make_shared<AIHelper>()
-                );
-            }
-            AIHelperPtr= userSessions[sessionId];
-            messages= AIHelperPtr->GetMessages();
-        }
+        AISpeechProcessor speechProcessor(clientId, clientSecret);
+        
 
+        std::string speechUrl = speechProcessor.synthesize(text,
+                                                           "mp3-16k", 
+                                                           "zh",  
+                                                            5, 
+                                                            5, 
+                                                            5 );  
 
         json successResp;
         successResp["success"] = true;
-        successResp["history"] = json::array();
-
-        for (size_t i = 0; i < messages.size(); ++i)
-        {
-            json msgJson;
-            msgJson["is_user"] = (i % 2 == 0);
-            msgJson["content"] = messages[i].first;
-            successResp["history"].push_back(msgJson);
-        }
-
+        successResp["url"] = speechUrl;
         std::string successBody = successResp.dump(4);
-
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
         resp->setCloseConnection(false);
         resp->setContentType("application/json");
@@ -73,9 +65,8 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
         resp->setBody(successBody);
         return;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
-
         json failureResp;
         failureResp["status"] = "error";
         failureResp["message"] = e.what();
@@ -87,3 +78,12 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
         resp->setBody(failureBody);
     }
 }
+
+
+
+
+
+
+
+
+

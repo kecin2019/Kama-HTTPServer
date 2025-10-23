@@ -15,10 +15,12 @@
 #include "../../../HttpServer/include/utils/MysqlUtil.h"
 #include "../../../HttpServer/include/utils/FileUtil.h"
 #include "../../../HttpServer/include/utils/JsonUtil.h"
-#include "AIUtil/AIHelper.h"
-#include "AIUtil/ImageRecognizer.h"
-#include "AIUtil/base64.h"
-#include "AIUtil/MQManager.h"
+#include"AIUtil/AISpeechProcessor.h"
+#include"AIUtil/AIHelper.h"
+#include"AIUtil/ImageRecognizer.h"
+#include"AIUtil/base64.h"
+#include"AIUtil/MQManager.h"
+
 
 class ChatLoginHandler;
 class ChatRegisterHandler;
@@ -32,8 +34,12 @@ class AIMenuHandler;
 class AIUploadHandler;
 class AIUploadSendHandler;
 
-class ChatServer
-{
+
+class ChatCreateAndSendHandler;
+class ChatSessionsHandler;
+class ChatSpeechHandler;
+
+class ChatServer {
 public:
 	ChatServer(int port,
 			   const std::string &name,
@@ -55,6 +61,10 @@ private:
 	friend class AIUploadSendHandler;
 	friend class ChatHistoryHandler;
 
+	friend class ChatCreateAndSendHandler;
+	friend class ChatSessionsHandler;
+	friend class ChatSpeechHandler;
+
 private:
 	void initialize();
 	void initializeSession();
@@ -75,20 +85,25 @@ private:
 	{
 		return httpServer_.getSessionManager();
 	}
-	// 聊天服务器实例
-	http::HttpServer httpServer_;
-	// 数据库工具类实例
-	http::MysqlUtil mysqlUtil_;
-	// 记录在线用户的映射表，用户ID到是否在线的布尔值
-	std::unordered_map<int, bool> onlineUsers_;
-	std::mutex mutexForOnlineUsers_;
-	// 每个用户的聊天信息映射表，用户ID到AIHelper智能指针
-	// 说明：每个用户在聊天过程中可能会有多个AIHelper实例，每个实例对应一个AI模型
-	// 注意：chatInformation[key]中的AIHelper实例是动态创建的，需要在使用前检查是否为空
-	// 警告：chatInformation[key]中的AIHelper实例在聊天过程中可能会被修改，需要注意线程安全问题
-	std::unordered_map<int, std::shared_ptr<AIHelper>> chatInformation;
-	std::mutex mutexForChatInformation;
 
-	std::unordered_map<int, std::shared_ptr<ImageRecognizer>> ImageRecognizerMap;
-	std::mutex mutexForImageRecognizerMap;
+	http::HttpServer	httpServer_;
+
+	http::MysqlUtil		mysqlUtil_;
+
+	std::unordered_map<int, bool>	onlineUsers_;
+	std::mutex	mutexForOnlineUsers_;
+
+	
+
+	// std::unordered_map<int, std::shared_ptr<AIHelper>> chatInformation;
+
+	std::unordered_map<int, std::unordered_map<std::string,std::shared_ptr<AIHelper> > > chatInformation;
+	std::mutex	mutexForChatInformation;
+
+	std::unordered_map<int, std::shared_ptr<ImageRecognizer> > ImageRecognizerMap;
+	std::mutex	mutexForImageRecognizerMap;
+
+	std::unordered_map<int,std::vector<std::string> > sessionsIdsMap;
+	std::mutex mutexForSessionsId;
+
 };
