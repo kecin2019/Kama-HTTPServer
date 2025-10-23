@@ -9,6 +9,11 @@
 #include "../include/handlers/AIUploadHandler.h"
 #include "../include/handlers/ChatHistoryHandler.h"
 
+
+#include"../include/handlers/ChatCreateAndSendHandler.h"
+#include"../include/handlers/ChatSessionsHandler.h"
+#include"../include/handlers/ChatSpeechHandler.h"
+
 #include "../include/ChatServer.h"
 #include "../../../HttpServer/include/http/HttpRequest.h"
 #include "../../../HttpServer/include/http/HttpResponse.h"
@@ -27,35 +32,26 @@ ChatServer::ChatServer(int port,
 void ChatServer::initialize()
 {
     std::cout << "ChatServer initialize start  ! " << std::endl;
-    http::MysqlUtil::init("tcp://127.0.0.1:3306", "root", "123456", "ChatHttpServer", 5);
-    // 初始化会话管理
+	http::MysqlUtil::init("tcp://127.0.0.1:3306", "root", "123456", "ChatHttpServer", 5);
+
     initializeSession();
-    // 初始化中间件
+
     initializeMiddleware();
-    // 初始化路由
+
     initializeRouter();
 }
 
-void ChatServer::initChatMessage()
-{
-    // 从MySQL数据库读取chat_message表中的数据，根据user_id将消息分组存储到chatInformation中
+void ChatServer::initChatMessage() {
+
     std::cout << "initChatMessage start ! " << std::endl;
     readDataFromMySQL();
     std::cout << "initChatMessage success ! " << std::endl;
 }
 
-void ChatServer::readDataFromMySQL()
-{
+void ChatServer::readDataFromMySQL() {
 
-    const char *apiKey = std::getenv("DASHSCOPE_API_KEY");
-    if (!apiKey)
-    {
-        std::cerr << "Error: DASHSCOPE_API_KEY not found in environment!" << std::endl;
-        return;
-    }
 
-    // SQL 查询语句，按时间戳和ID排序
-    std::string sql = "SELECT id, username, is_user, content, ts FROM chat_message ORDER BY ts ASC, id ASC";
+    std::string sql = "SELECT id, username,session_id, is_user, content, ts FROM chat_message ORDER BY ts ASC, id ASC";
 
     sql::ResultSet *res;
     try
@@ -71,38 +67,37 @@ void ChatServer::readDataFromMySQL()
     while (res->next())
     {
         long long user_id = 0;
+        std::string session_id ;  
         std::string username, content;
         long long ts = 0;
         int is_user = 1;
 
-        try
-        {
-            user_id = res->getInt64("id");
-            username = res->getString("username");
-            content = res->getString("content");
-            ts = res->getInt64("ts");
-            is_user = res->getInt("is_user");
+        try {
+            user_id    = res->getInt64("id");       
+            session_id = res->getString("session_id");  
+            username   = res->getString("username");
+            content    = res->getString("content");
+            ts         = res->getInt64("ts");
+            is_user    = res->getInt("is_user");
         }
         catch (const std::exception &e)
         {
             std::cerr << "Failed to read row: " << e.what() << std::endl;
-            continue; // 跳过当前行
+            continue; 
         }
 
-        // 找到或创建对应的 AIHelper 实例
+        auto& userSessions = chatInformation[user_id];
+
         std::shared_ptr<AIHelper> helper;
-        auto it = chatInformation.find(user_id);
-        if (it == chatInformation.end())
-        {
-            helper = std::make_shared<AIHelper>(apiKey);
-            chatInformation[user_id] = helper;
-        }
-        else
-        {
-            helper = it->second;
+        auto itSession = userSessions.find(session_id);
+        if (itSession == userSessions.end()) {
+            helper = std::make_shared<AIHelper>();
+            userSessions[session_id] = helper;
+			sessionsIdsMap[user_id].push_back(session_id);
+        } else {
+            helper = itSession->second;
         }
 
-        // 恢复消息到 AIHelper 实例
         helper->restoreMessage(content, ts);
     }
 
@@ -119,47 +114,50 @@ void ChatServer::start()
     httpServer_.start();
 }
 
-void ChatServer::initializeRouter()
-{
-    // 注册URL路径和对应的处理程序
-    // 首页
+
+void ChatServer::initializeRouter() {
+
     httpServer_.Get("/", std::make_shared<ChatEntryHandler>(this));
     httpServer_.Get("/entry", std::make_shared<ChatEntryHandler>(this));
-    // 登录
+    
     httpServer_.Post("/login", std::make_shared<ChatLoginHandler>(this));
-    // 注册
+    
     httpServer_.Post("/register", std::make_shared<ChatRegisterHandler>(this));
-    // 注销
+    
     httpServer_.Post("/user/logout", std::make_shared<ChatLogoutHandler>(this));
-    // 聊天页面
+
     httpServer_.Get("/chat", std::make_shared<ChatHandler>(this));
-    // 发送消息
+
     httpServer_.Post("/chat/send", std::make_shared<ChatSendHandler>(this));
-    // 菜单页面
+ 
     httpServer_.Get("/menu", std::make_shared<AIMenuHandler>(this));
-    // 上传文件页面
+    
     httpServer_.Get("/upload", std::make_shared<AIUploadHandler>(this));
-    // 上传文件
+   
     httpServer_.Post("/upload/send", std::make_shared<AIUploadSendHandler>(this));
-    // 聊天历史记录
+    
     httpServer_.Post("/chat/history", std::make_shared<ChatHistoryHandler>(this));
+
+    
+    httpServer_.Post("/chat/send-new-session", std::make_shared<ChatCreateAndSendHandler>(this));
+    httpServer_.Get("/chat/sessions", std::make_shared<ChatSessionsHandler>(this));
+
+    httpServer_.Post("/chat/tts", std::make_shared<ChatSpeechHandler>(this));
 }
 
-void ChatServer::initializeSession()
-{
-    // 会话存储
+void ChatServer::initializeSession() {
+
     auto sessionStorage = std::make_unique<http::session::MemorySessionStorage>();
-    // 会话管理器
+
     auto sessionManager = std::make_unique<http::session::SessionManager>(std::move(sessionStorage));
-    // 用户会话管理器
+
     setSessionManager(std::move(sessionManager));
 }
 
-void ChatServer::initializeMiddleware()
-{
-    // 跨域中间件
+void ChatServer::initializeMiddleware() {
+
     auto corsMiddleware = std::make_shared<http::middleware::CorsMiddleware>();
-    // 添加跨域中间件
+
     httpServer_.addMiddleware(corsMiddleware);
 }
 
@@ -193,7 +191,7 @@ void ChatServer::packageResp(const std::string &version,
     catch (const std::exception &e)
     {
         LOG_ERROR << "Error in packageResp: " << e.what();
-        // 打包失败时，设置默认的错误状态码和消息
+
         resp->setStatusCode(http::HttpResponse::k500InternalServerError);
         resp->setStatusMessage("Internal Server Error");
         resp->setCloseConnection(true);

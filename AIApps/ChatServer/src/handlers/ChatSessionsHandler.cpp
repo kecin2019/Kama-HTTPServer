@@ -1,8 +1,8 @@
-#include "../include/handlers/AIMenuHandler.h"
+#include "../include/handlers/ChatSessionsHandler.h"
 
-void AIMenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
+
+void ChatSessionsHandler::handle(const http::HttpRequest& req, http::HttpResponse* resp)
 {
-
     try
     {
 
@@ -17,44 +17,45 @@ void AIMenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *res
             std::string errorBody = errorResp.dump(4);
 
             server_->packageResp(req.getVersion(), http::HttpResponse::k401Unauthorized,
-                                 "Unauthorized", true, "application/json", errorBody.size(),
-                                 errorBody, resp);
+                "Unauthorized", true, "application/json", errorBody.size(),
+                errorBody, resp);
             return;
         }
 
 
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
+        
+        std::vector<std::string> sessions;  
 
-        std::string reqFile("../AIApps/ChatServer/resource/menu.html");
-        FileUtil fileOperater(reqFile);
-        if (!fileOperater.isValid())
         {
-            LOG_WARN << reqFile << "not exist.";
-            fileOperater.resetDefaultFile();
+            std::lock_guard<std::mutex> lock(server_->mutexForSessionsId);
+            sessions = server_->sessionsIdsMap[userId]; 
         }
 
-        std::vector<char> buffer(fileOperater.size());
-        fileOperater.readFile(buffer); // ļ
-        std::string htmlContent(buffer.data(), buffer.size());
+        json successResp;
+        successResp["success"] = true;
 
 
-        size_t headEnd = htmlContent.find("</head>");
-        if (headEnd != std::string::npos)
-        {
-            std::string script = "<script>const userId = '" + std::to_string(userId) + "';</script>";
-            htmlContent.insert(headEnd, script);
+        json sessionArray = json::array();
+        for (auto sid : sessions) {
+            json s;
+            s["sessionId"] = sid;
+            s["name"] = "Ự " + sid;
+            sessionArray.push_back(s);
         }
+        successResp["sessions"] = sessionArray;
 
-        // server_->packageResp(req.getVersion(), HttpResponse::k200Ok, "OK"
-        //             , false, "text/html", htmlContent.size(), htmlContent, resp);
+        std::string successBody = successResp.dump(4);
+
         resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");
         resp->setCloseConnection(false);
-        resp->setContentType("text/html");
-        resp->setContentLength(htmlContent.size());
-        resp->setBody(htmlContent);
+        resp->setContentType("application/json");
+        resp->setContentLength(successBody.size());
+        resp->setBody(successBody);
+        return;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
 
         json failureResp;
@@ -68,3 +69,12 @@ void AIMenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *res
         resp->setBody(failureBody);
     }
 }
+
+
+
+
+
+
+
+
+
