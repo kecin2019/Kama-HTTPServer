@@ -25,12 +25,23 @@ namespace http
             using HandlerPtr = std::shared_ptr<RouterHandler>;
             using HandlerCallback = std::function<void(const HttpRequest &, HttpResponse *)>;
 
+            /*
+             * 当 unordered_map 中使用自定义类型作为键时，需要提供自定义的哈希函数（见 RouteKeyHash）
+             * 还需要为自定义类型键重载相等运算符（operator==），用于哈希冲突时判断键是否真的相等
+             * unordered_map的工作原理：
+             * 哈希计算：使用哈希函数计算键的哈希值
+             * 桶定位：根据哈希值确定存储桶（bucket）
+             * 冲突处理：同一桶内处理哈希冲突
+             * 没有哈希函数，unordered_map 无法确定元素应该存储在哪个桶中。
+             */
+
             // 路由键（请求方法 + URI）
             struct RouteKey
             {
-                HttpRequest::Method method;
-                std::string path;
+                HttpRequest::Method method; // HTTP 请求方法
+                std::string path;           // HTTP 请求路径
 
+                // 运算符重载：用于比较路由键是否相等
                 bool operator==(const RouteKey &other) const
                 {
                     return method == other.method && path == other.path;
@@ -45,15 +56,17 @@ namespace http
                 //     return std::hash<int>{}(static_cast<int>(key.method)) ^
                 //            std::hash<std::string>{}(key.path);
                 // }
+
+                // 自定义哈希函数：将请求方法和路径组合起来计算哈希值
                 size_t operator()(const RouteKey &key) const
                 {
                     size_t methodHash = std::hash<int>{}(static_cast<int>(key.method));
                     size_t pathHash = std::hash<std::string>{}(key.path);
-                    return methodHash * 31 + pathHash;
+                    return methodHash * 31 + pathHash; // 使用方法哈希乘以31（质数）再加上路径哈希，有助于减少哈希冲突
                 }
             };
 
-            // 注册路由处理器
+            // 注册对象式路由处理器
             void registerHandler(HttpRequest::Method method, const std::string &path, HandlerPtr handler);
 
             // 注册回调函数形式的处理器
@@ -61,7 +74,7 @@ namespace http
 
             // 注册动态路由处理器
             void addRegexHandler(HttpRequest::Method method, const std::string &path, HandlerPtr handler)
-            {
+            { // std::regex 为正则表达式处理工具
                 std::regex pathRegex = convertToRegex(path);
                 regexHandlers_.emplace_back(method, pathRegex, handler);
             }

@@ -43,10 +43,10 @@ namespace http
             void clear();
 
         private:
-            std::string sessionId_;
-            std::unordered_map<std::string, std::string> data_;
-            std::chrono::system_clock::time_point expiryTime_;
-            int maxAge_; // 过期时间（秒）
+            std::string sessionId_;                             // 唯一会话ID
+            std::unordered_map<std::string, std::string> data_; // 会话数据存储
+            std::chrono::system_clock::time_point expiryTime_;  // 过期时间点
+            int maxAge_;                                        // 过期时间（秒）
             SessionManager *sessionManager_;
         };
 
