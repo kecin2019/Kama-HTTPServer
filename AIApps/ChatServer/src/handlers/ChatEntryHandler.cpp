@@ -13,7 +13,7 @@ void ChatEntryHandler::handle(const http::HttpRequest &req, http::HttpResponse *
     }
 
     std::vector<char> buffer(fileOperater.size());
-    fileOperater.readFile(buffer); 
+    fileOperater.readFile(buffer);
     std::string bufStr = std::string(buffer.data(), buffer.size());
 
     resp->setStatusLine(req.getVersion(), http::HttpResponse::k200Ok, "OK");

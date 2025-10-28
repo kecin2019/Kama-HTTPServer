@@ -5,11 +5,11 @@
 class ChatSpeechHandler : public http::router::RouterHandler
 {
 public:
-    explicit ChatSpeechHandler(ChatServer* server) : server_(server) {}
+    explicit ChatSpeechHandler(ChatServer *server) : server_(server) {}
 
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
-private:
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
 
 private:
-    ChatServer* server_;
+private:
+    ChatServer *server_;
 };

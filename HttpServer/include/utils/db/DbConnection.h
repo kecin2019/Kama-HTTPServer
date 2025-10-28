@@ -33,7 +33,7 @@ namespace http
             void cleanup();
 
             template <typename... Args>
-            sql::ResultSet *executeQuery(const std::string &sql, Args &&...args)
+            sql::ResultSet *executeQuery(const std::string &sql, Args &&...args) // Args 是参数类型包，args 是参数包，... 代表任意数量的参数
             {
                 std::lock_guard<std::mutex> lock(mutex_);
                 try
@@ -41,6 +41,7 @@ namespace http
                     // 直接创建新的预处理语句，不使用缓存
                     std::unique_ptr<sql::PreparedStatement> stmt(
                         conn_->prepareStatement(sql));
+                    // 完美转发保证参数左值/右值特性，使移动语义等特性正常工作
                     bindParams(stmt.get(), 1, std::forward<Args>(args)...);
                     return stmt->executeQuery();
                 }

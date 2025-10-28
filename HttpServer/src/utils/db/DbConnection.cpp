@@ -16,15 +16,16 @@ namespace http
             try
             {
                 sql::mysql::MySQL_Driver *driver = sql::mysql::get_mysql_driver_instance();
+                // reset 为智能指针的成员函数，重置指针所管理的资源，确保不存在旧的连接
                 conn_.reset(driver->connect(host_, user_, password_));
                 if (conn_)
                 {
                     conn_->setSchema(database_);
 
                     // 设置连接属性
-                    conn_->setClientOption("OPT_RECONNECT", "true");
-                    conn_->setClientOption("OPT_CONNECT_TIMEOUT", "10");
-                    conn_->setClientOption("multi_statements", "false");
+                    conn_->setClientOption("OPT_RECONNECT", "true");     // 自动重连
+                    conn_->setClientOption("OPT_CONNECT_TIMEOUT", "10"); // 连接超时时间为10秒
+                    conn_->setClientOption("multi_statements", "false"); // 禁用多语句执行
 
                     // 设置字符集
                     std::unique_ptr<sql::Statement> stmt(conn_->createStatement());

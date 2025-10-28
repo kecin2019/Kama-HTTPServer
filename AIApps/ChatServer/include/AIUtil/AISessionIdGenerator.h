@@ -5,13 +5,14 @@
 #include <ctime>
 #include <string>
 
-
-class AISessionIdGenerator {
+class AISessionIdGenerator
+{
 public:
-    AISessionIdGenerator() {
-        
+    AISessionIdGenerator()
+    {
+
         std::srand(static_cast<unsigned>(std::time(nullptr)));
     }
-    
+
     std::string generate();
 };

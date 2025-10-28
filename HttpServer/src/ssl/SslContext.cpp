@@ -24,7 +24,7 @@ namespace ssl
                              OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
                          nullptr);
 
-        // 创建 SSL 上下文
+        // 创建 SSL 上下文，上下文的主要作用为存储 SSL 配置和会话状态，实现配置复用
         const SSL_METHOD *method = TLS_server_method();
         ctx_ = SSL_CTX_new(method);
         if (!ctx_)

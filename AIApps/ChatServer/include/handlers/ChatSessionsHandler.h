@@ -6,12 +6,12 @@
 class ChatSessionsHandler : public http::router::RouterHandler
 {
 public:
-    explicit ChatSessionsHandler(ChatServer* server) : server_(server) {}
+    explicit ChatSessionsHandler(ChatServer *server) : server_(server) {}
 
-    void handle(const http::HttpRequest& req, http::HttpResponse* resp) override;
-private:
+    void handle(const http::HttpRequest &req, http::HttpResponse *resp) override;
 
 private:
-    ChatServer* server_;
-    http::MysqlUtil     mysqlUtil_;
+private:
+    ChatServer *server_;
+    http::MysqlUtil mysqlUtil_;
 };

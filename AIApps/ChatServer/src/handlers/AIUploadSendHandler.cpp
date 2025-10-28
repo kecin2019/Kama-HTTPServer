@@ -25,11 +25,12 @@ void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpRespons
         std::shared_ptr<ImageRecognizer> ImageRecognizerPtr;
         {
             std::lock_guard<std::mutex> lock(server_->mutexForImageRecognizerMap);
-            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end()) {
+            if (server_->ImageRecognizerMap.find(userId) == server_->ImageRecognizerMap.end())
+            {
 
                 server_->ImageRecognizerMap.emplace(
                     userId,
-                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx")  //todo:Remove hard coding
+                    std::make_shared<ImageRecognizer>("/root/models/mobilenetv2/mobilenetv2-7.onnx") // todo:Remove hard coding
                 );
             }
             ImageRecognizerPtr = server_->ImageRecognizerMap[userId];
@@ -56,14 +57,12 @@ void AIUploadSendHandler::handle(const http::HttpRequest &req, http::HttpRespons
 
         std::string className = ImageRecognizerPtr->PredictFromBuffer(imgData);
 
-
         json successResp;
         successResp["success"] = "ok";
         successResp["filename"] = filename;
         successResp["class_name"] = className;
 
         successResp["confidence"] = 0.95; // todo:Calculating true confidence
-
 
         std::string successBody = successResp.dump(4);
 

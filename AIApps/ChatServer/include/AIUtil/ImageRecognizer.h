@@ -12,17 +12,17 @@ class ImageRecognizer
 {
 public:
     // Image model and label loading
-    explicit ImageRecognizer(const std::string& model_path,
-        const std::string& label_path = "/root/imagenet_classes.txt");
+    explicit ImageRecognizer(const std::string &model_path,
+                             const std::string &label_path = "/root/imagenet_classes.txt");
 
     // Predict from file
-    std::string PredictFromFile(const std::string& image_path);
+    std::string PredictFromFile(const std::string &image_path);
 
-    //PredictFromBuffer
-    std::string PredictFromBuffer(const std::vector<unsigned char>& image_data);
+    // PredictFromBuffer
+    std::string PredictFromBuffer(const std::vector<unsigned char> &image_data);
 
     // Predict from OpenCV Mat
-    std::string PredictFromMat(const cv::Mat& img);
+    std::string PredictFromMat(const cv::Mat &img);
 
 private:
     Ort::Env env;

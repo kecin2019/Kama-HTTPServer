@@ -9,10 +9,9 @@
 #include "../include/handlers/AIUploadHandler.h"
 #include "../include/handlers/ChatHistoryHandler.h"
 
-
-#include"../include/handlers/ChatCreateAndSendHandler.h"
-#include"../include/handlers/ChatSessionsHandler.h"
-#include"../include/handlers/ChatSpeechHandler.h"
+#include "../include/handlers/ChatCreateAndSendHandler.h"
+#include "../include/handlers/ChatSessionsHandler.h"
+#include "../include/handlers/ChatSpeechHandler.h"
 
 #include "../include/ChatServer.h"
 #include "../../../HttpServer/include/http/HttpRequest.h"
@@ -32,7 +31,7 @@ ChatServer::ChatServer(int port,
 void ChatServer::initialize()
 {
     std::cout << "ChatServer initialize start  ! " << std::endl;
-	http::MysqlUtil::init("tcp://127.0.0.1:3306", "root", "123456", "ChatHttpServer", 5);
+    http::MysqlUtil::init("tcp://127.0.0.1:3306", "root", "123456", "ChatHttpServer", 5);
 
     initializeSession();
 
@@ -41,15 +40,16 @@ void ChatServer::initialize()
     initializeRouter();
 }
 
-void ChatServer::initChatMessage() {
+void ChatServer::initChatMessage()
+{
 
     std::cout << "initChatMessage start ! " << std::endl;
     readDataFromMySQL();
     std::cout << "initChatMessage success ! " << std::endl;
 }
 
-void ChatServer::readDataFromMySQL() {
-
+void ChatServer::readDataFromMySQL()
+{
 
     std::string sql = "SELECT id, username,session_id, is_user, content, ts FROM chat_message ORDER BY ts ASC, id ASC";
 
@@ -67,34 +67,38 @@ void ChatServer::readDataFromMySQL() {
     while (res->next())
     {
         long long user_id = 0;
-        std::string session_id ;  
+        std::string session_id;
         std::string username, content;
         long long ts = 0;
         int is_user = 1;
 
-        try {
-            user_id    = res->getInt64("id");       
-            session_id = res->getString("session_id");  
-            username   = res->getString("username");
-            content    = res->getString("content");
-            ts         = res->getInt64("ts");
-            is_user    = res->getInt("is_user");
+        try
+        {
+            user_id = res->getInt64("id");
+            session_id = res->getString("session_id");
+            username = res->getString("username");
+            content = res->getString("content");
+            ts = res->getInt64("ts");
+            is_user = res->getInt("is_user");
         }
         catch (const std::exception &e)
         {
             std::cerr << "Failed to read row: " << e.what() << std::endl;
-            continue; 
+            continue;
         }
 
-        auto& userSessions = chatInformation[user_id];
+        auto &userSessions = chatInformation[user_id];
 
         std::shared_ptr<AIHelper> helper;
         auto itSession = userSessions.find(session_id);
-        if (itSession == userSessions.end()) {
+        if (itSession == userSessions.end())
+        {
             helper = std::make_shared<AIHelper>();
             userSessions[session_id] = helper;
-			sessionsIdsMap[user_id].push_back(session_id);
-        } else {
+            sessionsIdsMap[user_id].push_back(session_id);
+        }
+        else
+        {
             helper = itSession->second;
         }
 
@@ -114,38 +118,38 @@ void ChatServer::start()
     httpServer_.start();
 }
 
-
-void ChatServer::initializeRouter() {
+void ChatServer::initializeRouter()
+{
 
     httpServer_.Get("/", std::make_shared<ChatEntryHandler>(this));
     httpServer_.Get("/entry", std::make_shared<ChatEntryHandler>(this));
-    
+
     httpServer_.Post("/login", std::make_shared<ChatLoginHandler>(this));
-    
+
     httpServer_.Post("/register", std::make_shared<ChatRegisterHandler>(this));
-    
+
     httpServer_.Post("/user/logout", std::make_shared<ChatLogoutHandler>(this));
 
     httpServer_.Get("/chat", std::make_shared<ChatHandler>(this));
 
     httpServer_.Post("/chat/send", std::make_shared<ChatSendHandler>(this));
- 
+
     httpServer_.Get("/menu", std::make_shared<AIMenuHandler>(this));
-    
+
     httpServer_.Get("/upload", std::make_shared<AIUploadHandler>(this));
-   
+
     httpServer_.Post("/upload/send", std::make_shared<AIUploadSendHandler>(this));
-    
+
     httpServer_.Post("/chat/history", std::make_shared<ChatHistoryHandler>(this));
 
-    
     httpServer_.Post("/chat/send-new-session", std::make_shared<ChatCreateAndSendHandler>(this));
     httpServer_.Get("/chat/sessions", std::make_shared<ChatSessionsHandler>(this));
 
     httpServer_.Post("/chat/tts", std::make_shared<ChatSpeechHandler>(this));
 }
 
-void ChatServer::initializeSession() {
+void ChatServer::initializeSession()
+{
 
     auto sessionStorage = std::make_unique<http::session::MemorySessionStorage>();
 
@@ -154,7 +158,8 @@ void ChatServer::initializeSession() {
     setSessionManager(std::move(sessionManager));
 }
 
-void ChatServer::initializeMiddleware() {
+void ChatServer::initializeMiddleware()
+{
 
     auto corsMiddleware = std::make_shared<http::middleware::CorsMiddleware>();
 

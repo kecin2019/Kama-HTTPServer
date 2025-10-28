@@ -21,15 +21,16 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
             return;
         }
 
-
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
         std::string sessionId;
         auto body = req.getBody();
-        if (!body.empty()) {
+        if (!body.empty())
+        {
             auto j = json::parse(body);
-            if (j.contains("sessionId")) sessionId = j["sessionId"];
+            if (j.contains("sessionId"))
+                sessionId = j["sessionId"];
         }
 
         std::vector<std::pair<std::string, long long>> messages;
@@ -38,19 +39,18 @@ void ChatHistoryHandler::handle(const http::HttpRequest &req, http::HttpResponse
             std::shared_ptr<AIHelper> AIHelperPtr;
             std::lock_guard<std::mutex> lock(server_->mutexForChatInformation);
 
-            auto& userSessions = server_->chatInformation[userId];
+            auto &userSessions = server_->chatInformation[userId];
 
-            if (userSessions.find(sessionId) == userSessions.end()) {
+            if (userSessions.find(sessionId) == userSessions.end())
+            {
 
-                userSessions.emplace( 
+                userSessions.emplace(
                     sessionId,
-                    std::make_shared<AIHelper>()
-                );
+                    std::make_shared<AIHelper>());
             }
-            AIHelperPtr= userSessions[sessionId];
-            messages= AIHelperPtr->GetMessages();
+            AIHelperPtr = userSessions[sessionId];
+            messages = AIHelperPtr->GetMessages();
         }
-
 
         json successResp;
         successResp["success"] = true;

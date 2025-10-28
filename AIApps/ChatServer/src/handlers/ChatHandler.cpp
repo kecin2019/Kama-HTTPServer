@@ -23,7 +23,6 @@ void ChatHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
             return;
         }
 
-
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
@@ -36,9 +35,8 @@ void ChatHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
         }
 
         std::vector<char> buffer(fileOperater.size());
-        fileOperater.readFile(buffer); 
+        fileOperater.readFile(buffer);
         std::string htmlContent(buffer.data(), buffer.size());
-
 
         size_t headEnd = htmlContent.find("</head>");
         if (headEnd != std::string::npos)

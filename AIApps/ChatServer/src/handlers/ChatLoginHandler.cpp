@@ -2,7 +2,7 @@
 
 void ChatLoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *resp)
 {
-    
+
     auto contentType = req.getHeader("Content-Type");
     if (contentType.empty() || contentType != "application/json" || req.getBody().empty())
     {
@@ -15,7 +15,6 @@ void ChatLoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *
         return;
     }
 
-
     try
     {
         json parsed = json::parse(req.getBody());
@@ -27,7 +26,6 @@ void ChatLoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *
         {
 
             auto session = server_->getSessionManager()->getSession(req, resp);
-
 
             session->setValue("userId", std::to_string(userId));
             session->setValue("username", username);
@@ -67,7 +65,7 @@ void ChatLoginHandler::handle(const http::HttpRequest &req, http::HttpResponse *
                 return;
             }
         }
-        else 
+        else
         {
             json failureResp;
             failureResp["status"] = "error";

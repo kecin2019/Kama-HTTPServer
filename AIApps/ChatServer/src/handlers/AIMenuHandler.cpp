@@ -22,7 +22,6 @@ void AIMenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *res
             return;
         }
 
-
         int userId = std::stoi(session->getValue("userId"));
         std::string username = session->getValue("username");
 
@@ -37,7 +36,6 @@ void AIMenuHandler::handle(const http::HttpRequest &req, http::HttpResponse *res
         std::vector<char> buffer(fileOperater.size());
         fileOperater.readFile(buffer); // ļ
         std::string htmlContent(buffer.data(), buffer.size());
-
 
         size_t headEnd = htmlContent.find("</head>");
         if (headEnd != std::string::npos)
